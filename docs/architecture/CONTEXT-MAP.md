@@ -33,7 +33,7 @@ graph TD
     AdminBrowser -->|"6. رفع أصول الميديا مباشرة (Direct Binary Upload)"| R2Storage
     Visitor -->|"7. استعراض وقراءة صور وأصول الميديا العامة"| R2Storage
 
-    AppServer -.->"8. إرسال إشعارات الرسائل الواردة (اختياري)"| EmailProvider
+    AppServer -.->|"8. إرسال إشعارات الرسائل الواردة (اختياري)"| EmailProvider
 
     %% Styling
     classDef actorStyle fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;
