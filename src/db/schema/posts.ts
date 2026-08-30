@@ -1,6 +1,15 @@
-import { pgTable, uuid, varchar, text, timestamp, check, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  timestamp,
+  check,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { users } from './users';
+import { user } from './auth';
 import { categories } from './categories';
 
 export const posts = pgTable(
@@ -17,10 +26,10 @@ export const posts = pgTable(
       .references(() => categories.id, { onDelete: 'restrict' }),
     authorId: uuid('author_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'restrict' }),
+      .references(() => user.id, { onDelete: 'restrict' }),
     publishedAt: timestamp('published_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
-    archivedByUserId: uuid('archived_by_user_id').references(() => users.id, {
+    archivedByUserId: uuid('archived_by_user_id').references(() => user.id, {
       onDelete: 'restrict',
     }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -38,5 +47,6 @@ export const posts = pgTable(
     ),
     index('idx_posts_status_published_at').on(table.status, table.publishedAt),
     index('idx_posts_category_id').on(table.categoryId),
+    uniqueIndex('idx_posts_lower_slug').on(sql`lower(${table.slug})`),
   ]
 );

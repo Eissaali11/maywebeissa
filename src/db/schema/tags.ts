@@ -1,12 +1,25 @@
-import { pgTable, uuid, varchar, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  timestamp,
+  primaryKey,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { posts } from './posts';
 
-export const tags = pgTable('tags', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 40 }).notNull().unique(),
-  slug: varchar('slug', { length: 50 }).notNull().unique(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const tags = pgTable(
+  'tags',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 40 }).notNull().unique(),
+    slug: varchar('slug', { length: 50 }).notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('idx_tags_lower_slug').on(sql`lower(${table.slug})`)]
+);
 
 export const postTags = pgTable(
   'post_tags',

@@ -1,16 +1,54 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 --> statement-breakpoint
-CREATE TABLE "users" (
+CREATE TABLE "account" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"account_id" varchar(255) NOT NULL,
+	"provider_id" varchar(255) NOT NULL,
+	"access_token" text,
+	"refresh_token" text,
+	"access_token_expires_at" timestamp with time zone,
+	"refresh_token_expires_at" timestamp with time zone,
+	"scope" text,
+	"password" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "session" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"token" varchar(255) NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"ip_address" varchar(64),
+	"user_agent" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "session_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
+CREATE TABLE "user" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(100) NOT NULL,
 	"email" varchar(255) NOT NULL,
-	"password_hash" varchar(255) NOT NULL,
-	"full_name" varchar(100) NOT NULL,
+	"email_verified" boolean DEFAULT false NOT NULL,
+	"image" text,
+	"password_hash" varchar(255),
 	"role" varchar(20) DEFAULT 'ADMIN' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "users_email_unique" UNIQUE("email"),
-	CONSTRAINT "users_role_unique" UNIQUE("role"),
-	CONSTRAINT "users_role_check" CHECK ("users"."role" = 'ADMIN')
+	CONSTRAINT "user_email_unique" UNIQUE("email"),
+	CONSTRAINT "user_role_unique" UNIQUE("role"),
+	CONSTRAINT "user_role_check" CHECK ("user"."role" = 'ADMIN')
+);
+--> statement-breakpoint
+CREATE TABLE "verification" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"identifier" varchar(255) NOT NULL,
+	"value" text NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "categories" (
@@ -81,6 +119,7 @@ CREATE TABLE "projects" (
 	"slug" varchar(220) NOT NULL,
 	"summary" text NOT NULL,
 	"description_markdown" text NOT NULL,
+	"project_type" varchar(30) NOT NULL,
 	"live_url" varchar(500),
 	"github_url" varchar(500),
 	"is_featured" boolean DEFAULT false NOT NULL,
@@ -91,6 +130,7 @@ CREATE TABLE "projects" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "projects_slug_unique" UNIQUE("slug"),
+	CONSTRAINT "projects_project_type_check" CHECK ("projects"."project_type" IN ('MOBILE_APP', 'WEB_SYSTEM', 'API', 'ADMIN_SYSTEM', 'OTHER')),
 	CONSTRAINT "projects_status_check" CHECK ("projects"."status" IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')),
 	CONSTRAINT "projects_published_at_check" CHECK ("projects"."status" != 'PUBLISHED' OR "projects"."published_at" IS NOT NULL),
 	CONSTRAINT "projects_archived_at_check" CHECK ("projects"."status" != 'ARCHIVED' OR ("projects"."archived_at" IS NOT NULL AND "projects"."archived_by_user_id" IS NOT NULL))
@@ -103,6 +143,10 @@ CREATE TABLE "media_assets" (
 	"public_url" varchar(500),
 	"mime_type" varchar(100) NOT NULL,
 	"file_size_bytes" bigint NOT NULL,
+	"alt_text" varchar(255),
+	"width" integer,
+	"height" integer,
+	"checksum" varchar(64),
 	"status" varchar(20) NOT NULL,
 	"uploaded_by_user_id" uuid NOT NULL,
 	"upload_expires_at" timestamp with time zone NOT NULL,
@@ -112,6 +156,9 @@ CREATE TABLE "media_assets" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "media_assets_storage_key_unique" UNIQUE("storage_key"),
+	CONSTRAINT "media_assets_file_size_check" CHECK ("media_assets"."file_size_bytes" > 0),
+	CONSTRAINT "media_assets_width_check" CHECK ("media_assets"."width" IS NULL OR "media_assets"."width" > 0),
+	CONSTRAINT "media_assets_height_check" CHECK ("media_assets"."height" IS NULL OR "media_assets"."height" > 0),
 	CONSTRAINT "media_assets_status_check" CHECK ("media_assets"."status" IN ('PENDING_UPLOAD', 'ACTIVE', 'ARCHIVED')),
 	CONSTRAINT "media_assets_pending_check" CHECK ("media_assets"."status" != 'PENDING_UPLOAD' OR "media_assets"."upload_expires_at" IS NOT NULL),
 	CONSTRAINT "media_assets_active_check" CHECK ("media_assets"."status" != 'ACTIVE' OR ("media_assets"."public_url" IS NOT NULL AND "media_assets"."uploaded_at" IS NOT NULL)),
@@ -124,7 +171,8 @@ CREATE TABLE "post_media_assets" (
 	"is_cover" boolean DEFAULT false NOT NULL,
 	"display_order" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "post_media_assets_post_id_media_asset_id_pk" PRIMARY KEY("post_id","media_asset_id"),
-	CONSTRAINT "post_media_assets_display_order_unique" UNIQUE("post_id","display_order")
+	CONSTRAINT "post_media_assets_display_order_unique" UNIQUE("post_id","display_order"),
+	CONSTRAINT "post_media_display_order_check" CHECK ("post_media_assets"."display_order" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "project_media_assets" (
@@ -133,7 +181,8 @@ CREATE TABLE "project_media_assets" (
 	"is_cover" boolean DEFAULT false NOT NULL,
 	"display_order" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "project_media_assets_project_id_media_asset_id_pk" PRIMARY KEY("project_id","media_asset_id"),
-	CONSTRAINT "project_media_assets_display_order_unique" UNIQUE("project_id","display_order")
+	CONSTRAINT "project_media_assets_display_order_unique" UNIQUE("project_id","display_order"),
+	CONSTRAINT "project_media_display_order_check" CHECK ("project_media_assets"."display_order" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "contact_messages" (
@@ -164,27 +213,34 @@ CREATE TABLE "audit_logs" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "posts" ADD CONSTRAINT "posts_archived_by_user_id_users_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "posts" ADD CONSTRAINT "posts_archived_by_user_id_user_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_tags" ADD CONSTRAINT "post_tags_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_tags" ADD CONSTRAINT "post_tags_tag_id_tags_id_fk" FOREIGN KEY ("tag_id") REFERENCES "public"."tags"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "project_technologies" ADD CONSTRAINT "project_technologies_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "project_technologies" ADD CONSTRAINT "project_technologies_technology_id_technologies_id_fk" FOREIGN KEY ("technology_id") REFERENCES "public"."technologies"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "projects" ADD CONSTRAINT "projects_archived_by_user_id_users_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_uploaded_by_user_id_users_id_fk" FOREIGN KEY ("uploaded_by_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_archived_by_user_id_users_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "projects" ADD CONSTRAINT "projects_archived_by_user_id_user_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_uploaded_by_user_id_user_id_fk" FOREIGN KEY ("uploaded_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_archived_by_user_id_user_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_media_assets" ADD CONSTRAINT "post_media_assets_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_media_assets" ADD CONSTRAINT "post_media_assets_media_asset_id_media_assets_id_fk" FOREIGN KEY ("media_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "project_media_assets" ADD CONSTRAINT "project_media_assets_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "project_media_assets" ADD CONSTRAINT "project_media_assets_media_asset_id_media_assets_id_fk" FOREIGN KEY ("media_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "contact_messages" ADD CONSTRAINT "contact_messages_archived_by_user_id_users_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actor_user_id_users_id_fk" FOREIGN KEY ("actor_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "contact_messages" ADD CONSTRAINT "contact_messages_archived_by_user_id_user_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actor_user_id_user_id_fk" FOREIGN KEY ("actor_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_categories_lower_slug" ON "categories" USING btree (lower("slug"));--> statement-breakpoint
 CREATE INDEX "idx_posts_status_published_at" ON "posts" USING btree ("status","published_at");--> statement-breakpoint
 CREATE INDEX "idx_posts_category_id" ON "posts" USING btree ("category_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_posts_lower_slug" ON "posts" USING btree (lower("slug"));--> statement-breakpoint
 CREATE INDEX "idx_post_tags_tag_id" ON "post_tags" USING btree ("tag_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_tags_lower_slug" ON "tags" USING btree (lower("slug"));--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_technologies_lower_slug" ON "technologies" USING btree (lower("slug"));--> statement-breakpoint
 CREATE INDEX "idx_project_technologies_tech_id" ON "project_technologies" USING btree ("technology_id");--> statement-breakpoint
 CREATE INDEX "idx_projects_featured_status" ON "projects" USING btree ("is_featured","status","published_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_projects_lower_slug" ON "projects" USING btree (lower("slug"));--> statement-breakpoint
 CREATE INDEX "idx_media_assets_status_expires" ON "media_assets" USING btree ("status","upload_expires_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_post_media_single_cover" ON "post_media_assets" USING btree ("post_id") WHERE "post_media_assets"."is_cover" = true;--> statement-breakpoint
 CREATE INDEX "idx_post_media_asset_id" ON "post_media_assets" USING btree ("media_asset_id");--> statement-breakpoint
@@ -200,7 +256,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 --> statement-breakpoint
-CREATE OR REPLACE TRIGGER audit_logs_immutable_trigger
+CREATE OR REPLACE TRIGGER audit_logs_immutable_row_trigger
 BEFORE UPDATE OR DELETE ON audit_logs
 FOR EACH ROW
+EXECUTE FUNCTION prevent_audit_logs_mutation();
+--> statement-breakpoint
+CREATE OR REPLACE TRIGGER audit_logs_immutable_truncate_trigger
+BEFORE TRUNCATE ON audit_logs
+FOR EACH STATEMENT
 EXECUTE FUNCTION prevent_audit_logs_mutation();

@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
-import { users } from './users';
+import { user } from './auth';
 
 export const auditLogs = pgTable(
   'audit_logs',
@@ -7,7 +7,7 @@ export const auditLogs = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     actorUserId: uuid('actor_user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'restrict' }),
+      .references(() => user.id, { onDelete: 'restrict' }),
     action: varchar('action', { length: 100 }).notNull(),
     entityType: varchar('entity_type', { length: 50 }).notNull(),
     entityId: uuid('entity_id'),

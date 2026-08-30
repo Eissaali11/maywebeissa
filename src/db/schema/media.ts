@@ -13,7 +13,7 @@ import {
   integer,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { users } from './users';
+import { user } from './auth';
 import { posts } from './posts';
 import { projects } from './projects';
 
@@ -26,22 +26,29 @@ export const mediaAssets = pgTable(
     publicUrl: varchar('public_url', { length: 500 }),
     mimeType: varchar('mime_type', { length: 100 }).notNull(),
     fileSizeBytes: bigint('file_size_bytes', { mode: 'bigint' }).notNull(),
+    altText: varchar('alt_text', { length: 255 }),
+    width: integer('width'),
+    height: integer('height'),
+    checksum: varchar('checksum', { length: 64 }),
     status: varchar('status', { length: 20 }).notNull(),
     uploadedByUserId: uuid('uploaded_by_user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'restrict' }),
+      .references(() => user.id, { onDelete: 'restrict' }),
     uploadExpiresAt: timestamp('upload_expires_at', {
       withTimezone: true,
     }).notNull(),
     uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
-    archivedByUserId: uuid('archived_by_user_id').references(() => users.id, {
+    archivedByUserId: uuid('archived_by_user_id').references(() => user.id, {
       onDelete: 'restrict',
     }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    check('media_assets_file_size_check', sql`${table.fileSizeBytes} > 0`),
+    check('media_assets_width_check', sql`${table.width} IS NULL OR ${table.width} > 0`),
+    check('media_assets_height_check', sql`${table.height} IS NULL OR ${table.height} > 0`),
     check(
       'media_assets_status_check',
       sql`${table.status} IN ('PENDING_UPLOAD', 'ACTIVE', 'ARCHIVED')`
@@ -76,6 +83,7 @@ export const postMediaAssets = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.postId, table.mediaAssetId] }),
+    check('post_media_display_order_check', sql`${table.displayOrder} >= 0`),
     unique('post_media_assets_display_order_unique').on(table.postId, table.displayOrder),
     uniqueIndex('idx_post_media_single_cover')
       .on(table.postId)
@@ -98,6 +106,7 @@ export const projectMediaAssets = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.projectId, table.mediaAssetId] }),
+    check('project_media_display_order_check', sql`${table.displayOrder} >= 0`),
     unique('project_media_assets_display_order_unique').on(table.projectId, table.displayOrder),
     uniqueIndex('idx_project_media_single_cover')
       .on(table.projectId)

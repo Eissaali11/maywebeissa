@@ -2,10 +2,12 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
-const connectionString =
-  process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/portfolio_db';
+if (!process.env.DATABASE_URL) {
+  throw new Error('FATAL: DATABASE_URL environment variable is required.');
+}
 
-// For queries and application runtime
+const connectionString = process.env.DATABASE_URL;
+
 export const client = postgres(connectionString, {
   max: process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS, 10) : 10,
 });

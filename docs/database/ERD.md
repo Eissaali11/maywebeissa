@@ -2,7 +2,7 @@
 
 ## 1. نظرة عامة
 
-يقدم هذا المستند المخطط البصري الهيكلي لجميع الجداول الـ 13 المعتمدة في منصة الموقع الشخصي، موضحاً المفاتيح الرئيسية (PK)، المفاتيح الأجنبية (FK)، القيود، والصفات المحدثة لملف الرفع ورسائل التواصل والحماية.
+يقدم هذا المستند المخطط البصري الهيكلي لجميع الجداول الـ 16 المعتمدة في منصة الموقع الشخصي (4 جداول Better Auth للمصادقة والجلسات + 12 جدول بيانات للنظام)، موضحاً المفاتيح والقيود المحدثة.
 
 ---
 
@@ -11,13 +11,15 @@
 ```mermaid
 erDiagram
 
-    users ||--o{ posts : "author_id (يكتب)"
-    users ||--o{ posts : "archived_by_user_id (يؤرشف)"
-    users ||--o{ projects : "archived_by_user_id (يؤرشف)"
-    users ||--o{ media_assets : "uploaded_by_user_id (يرفع)"
-    users ||--o{ media_assets : "archived_by_user_id (يؤرشف)"
-    users ||--o{ contact_messages : "archived_by_user_id (يؤرشف)"
-    users ||--o{ audit_logs : "actor_user_id (ينفذ)"
+    user ||--o{ session : "user_id (جلسات)"
+    user ||--o{ account : "user_id (حسابات المرتبطات)"
+    user ||--o{ posts : "author_id (يكتب)"
+    user ||--o{ posts : "archived_by_user_id (يؤرشف)"
+    user ||--o{ projects : "archived_by_user_id (يؤرشف)"
+    user ||--o{ media_assets : "uploaded_by_user_id (يرفع)"
+    user ||--o{ media_assets : "archived_by_user_id (يؤرشف)"
+    user ||--o{ contact_messages : "archived_by_user_id (يؤرشف)"
+    user ||--o{ audit_logs : "actor_user_id (ينفذ)"
 
     categories ||--o{ posts : "category_id (يحتوي)"
 
@@ -33,12 +35,49 @@ erDiagram
     projects ||--o{ project_media_assets : "project_id"
     media_assets ||--o{ project_media_assets : "media_asset_id"
 
-    users {
+    user {
         uuid id PK
+        varchar name
         varchar email UK
+        boolean email_verified
+        text image
         varchar password_hash
-        varchar full_name
         varchar role UK "CHECK role = ADMIN"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    session {
+        uuid id PK
+        uuid user_id FK
+        varchar token UK
+        timestamptz expires_at
+        varchar ip_address
+        text user_agent
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    account {
+        uuid id PK
+        uuid user_id FK
+        varchar account_id
+        varchar provider_id
+        text access_token
+        text refresh_token
+        timestamptz access_token_expires_at
+        timestamptz refresh_token_expires_at
+        text scope
+        text password
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    verification {
+        uuid id PK
+        varchar identifier
+        text value
+        timestamptz expires_at
         timestamptz created_at
         timestamptz updated_at
     }
@@ -46,7 +85,7 @@ erDiagram
     categories {
         uuid id PK
         varchar name UK
-        varchar slug UK
+        varchar slug UK "UNIQUE lower(slug)"
         text description
         timestamptz created_at
         timestamptz updated_at
@@ -55,7 +94,7 @@ erDiagram
     posts {
         uuid id PK
         varchar title
-        varchar slug UK
+        varchar slug UK "UNIQUE lower(slug)"
         text summary
         text content_markdown
         varchar status "CHECK DRAFT|PUBLISHED|ARCHIVED"
@@ -71,7 +110,7 @@ erDiagram
     tags {
         uuid id PK
         varchar name UK
-        varchar slug UK
+        varchar slug UK "UNIQUE lower(slug)"
         timestamptz created_at
     }
 
@@ -83,7 +122,7 @@ erDiagram
     technologies {
         uuid id PK
         varchar name UK
-        varchar slug UK
+        varchar slug UK "UNIQUE lower(slug)"
         varchar icon_name
         timestamptz created_at
     }
@@ -91,9 +130,10 @@ erDiagram
     projects {
         uuid id PK
         varchar title
-        varchar slug UK
+        varchar slug UK "UNIQUE lower(slug)"
         text summary
         text description_markdown
+        varchar project_type "CHECK MOBILE_APP|WEB_SYSTEM|API|ADMIN_SYSTEM|OTHER"
         varchar live_url
         varchar github_url
         boolean is_featured
@@ -114,9 +154,13 @@ erDiagram
         uuid id PK
         varchar filename
         varchar storage_key UK
-        varchar public_url "NULL during PENDING_UPLOAD"
+        varchar public_url
         varchar mime_type
-        bigint file_size_bytes
+        bigint file_size_bytes "CHECK file_size_bytes > 0"
+        varchar alt_text
+        integer width "CHECK width > 0"
+        integer height "CHECK height > 0"
+        varchar checksum
         varchar status "CHECK PENDING_UPLOAD|ACTIVE|ARCHIVED"
         uuid uploaded_by_user_id FK
         timestamptz upload_expires_at
@@ -131,14 +175,14 @@ erDiagram
         uuid post_id PK, FK
         uuid media_asset_id PK, FK
         boolean is_cover "UNIQUE partial index (1 cover per post)"
-        integer display_order "UNIQUE(post_id, display_order)"
+        integer display_order "UNIQUE(post_id, display_order) CHECK >= 0"
     }
 
     project_media_assets {
         uuid project_id PK, FK
         uuid media_asset_id PK, FK
         boolean is_cover "UNIQUE partial index (1 cover per project)"
-        integer display_order "UNIQUE(project_id, display_order)"
+        integer display_order "UNIQUE(project_id, display_order) CHECK >= 0"
     }
 
     contact_messages {
@@ -166,18 +210,3 @@ erDiagram
         timestamptz created_at
     }
 ```
-
----
-
-## 3. ملخص القيود والفرادة المحدثة (Updated Constraints & Integrity Summary)
-
-1. **`users.role`**: قيد `CHECK (role = 'ADMIN')` مع `UNIQUE(role)` لمنع وجود أكثر من أدمن واحد في المرحلة الأولى.
-2. **`media_assets`**:
-   - `public_url` قابل لـ `NULL` في مرحلة `PENDING_UPLOAD`.
-   - أعمدة جديدة: `upload_expires_at`, `uploaded_at`, `updated_at`.
-3. **`post_media_assets` & `project_media_assets`**:
-   - فهارس فريدة جزئية (Partial Unique Indexes) لضمان غلاف واحد فقط لكل مقال أو مشروع (`WHERE is_cover = true`).
-   - قيود فرادة لترتيب العرض (`UNIQUE(post_id, display_order)` و`UNIQUE(project_id, display_order)`).
-4. **`contact_messages`**:
-   - أعمدة جديدة: `read_at`, `updated_at`.
-   - `ip_address_hash` يستخدم `HMAC-SHA256` مع مفتاح خارجي سري للمقارنة وحماية الخصوصية.

@@ -1,9 +1,14 @@
-import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
-export const technologies = pgTable('technologies', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 50 }).notNull().unique(),
-  slug: varchar('slug', { length: 60 }).notNull().unique(),
-  iconName: varchar('icon_name', { length: 50 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const technologies = pgTable(
+  'technologies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 50 }).notNull().unique(),
+    slug: varchar('slug', { length: 60 }).notNull().unique(),
+    iconName: varchar('icon_name', { length: 50 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('idx_technologies_lower_slug').on(sql`lower(${table.slug})`)]
+);

@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, check, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { users } from './users';
+import { user } from './auth';
 
 export const contactMessages = pgTable(
   'contact_messages',
@@ -14,7 +14,7 @@ export const contactMessages = pgTable(
     ipAddressHash: varchar('ip_address_hash', { length: 64 }).notNull(),
     readAt: timestamp('read_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
-    archivedByUserId: uuid('archived_by_user_id').references(() => users.id, {
+    archivedByUserId: uuid('archived_by_user_id').references(() => user.id, {
       onDelete: 'restrict',
     }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
