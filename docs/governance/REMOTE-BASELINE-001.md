@@ -2,13 +2,13 @@
 
 ## 1. التوثيق وقرار الحوكمة
 
-| البند              | التفاصيل                                                      |
-| ------------------ | ------------------------------------------------------------- |
-| **المعرف**         | `REMOTE-BASELINE-001`                                         |
-| **الإصدار**        | `1.0.0`                                                       |
-| **الحالة**         | **ACCEPTED — Retroactive Baseline Approved**                  |
-| **تاريخ الاعتماد** | 30 أغسطس 2026                                                 |
-| **التوجيه**        | قرار COO التشغيلي الخاص بحظر الدفع المباشر وقفل تدفق المستودع |
+| البند              | التفاصيل                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| **المعرف**         | `REMOTE-BASELINE-001`                                                                         |
+| **الإصدار**        | `1.1.0`                                                                                       |
+| **الحالة**         | **PROVEN — Process & Technical Protection Enforced**                                          |
+| **تاريخ الاعتماد** | 30 أغسطس 2026                                                                                 |
+| **التوجيه**        | قرار COO التشغيلي الخاص بحظر الدفع المباشر وقفل تدفق المستودع وتطبيق الحماية التقنية المباشرة |
 
 ---
 
@@ -22,17 +22,27 @@
 
 ---
 
-## 3. قواعد الحوكمة وحظر الدفع المباشر (`Workflow & Branch Policy`)
+## 3. التمييز بين حوكمة العمليات والحماية التقنية (`Process Policy vs Technical Protection`)
 
-1. **حظر الدفع المباشر (`No Direct Pushes to main`)**:
-   - يُحظر تماماً الدفع المباشر (`git push origin main`) إلى الفرع الرئيسي تحت أي ظرف من الظروف من قِبل وكيل التنفيذ أو أي طرف آخر.
-2. **حظر فرض الدفع (`No Force Pushes`)**:
-   - يُحظر استخدام `git push --force` أو `-f` على الفرع الرئيسي أو الفروع التنفيذية تماماً.
-3. **حظر الدمج المباشر من قبل الوكيل (`No Agent Self-Merge`)**:
-   - يُحظر على وكيل التنفيذ تنفيذ عملية `git merge` إلى `main` بنفسه.
-4. **دورة العمل الإلزامية لجميع التغييرات المستقبلية (`Mandatory Workflow`)**:
-   - **إنشاء فرع ميزات (`Feature Branch`)**: يتم العمل حصراً داخل فرع مخصص للطلب (مثل `feat/data-foundation-001`).
-   - **إنشاء طلب سحب مسودة (`Draft Pull Request`)**: يتم رفع الفرع وإنشاء Draft PR نحو `main`.
-   - **اجتياز جميع بوابات الجودة (`CI / Quality Gates Pass`)**: اجتياز 6 بوابات جودة (Lint, Typecheck, Test, Build, Secret Scan, Prettier).
-   - **مراجعة COO المستقلة (`COO Review & Audit`)**: مراجعة التغييرات والتحقق من المطابقة لـ SRS و ADR والتكامل.
-   - **موافقة المالك ودمج PR (`Owner Approval & Merge`)**: يتم التجهيز واعتماد الدمج النهائي بعد الموافقة الصريحة.
+### أ. سياسة حوكمة العمليات (`Process Governance Policy`)
+
+توثق سياسة العمل الملزمة للأنشطة والتطوير:
+
+1. **دورة العمل الإلزامية**: `feature branch → Draft PR → CI → COO review → Owner approval → merge`.
+2. **حظر الدفع المباشر والفرض**: يُحظر الدفع المباشر أو `git push --force` على `main`.
+3. **حظر الدمج الذاتي**: يُحظر على وكيل التنفيذ دمج أي PR مباشرة دون اعتماد صريح من المالك وCOO.
+
+### ب. الحماية التقنية البرمجية على GitHub (`Technical GitHub Branch Protection`)
+
+تأكيد الحماية البرمجية التقنية المطبقة فعلياً ومثبتة عبر GitHub REST API (`GET /repos/Eissaali11/maywebeissa/branches/main/protection`):
+
+1. **اشتراط طلب السحب (`Required Pull Request Reviews`)**:
+   - يلزم وجود Pull Request مراجَع وموافق عليه من مراجع واحد على الأقل (`required_approving_review_count: 1`).
+   - إلغاء الموافقات القديمة عند دفع التزامات جديدة (`dismiss_stale_reviews: true`).
+2. **اشتراط الفحوصات الإلزامية (`Required Status Checks`)**:
+   - اشتراط اجتياز فحص `Run Quality Gates` في CI قبل السماح بالدمج (`strict: true`, `contexts: ["Run Quality Gates"]`).
+3. **سلامة وقفل الفرع (`Branch Safety & Admin Enforcement`)**:
+   - حظر Force Push تماماً (`allow_force_pushes: false`).
+   - حظر حذف الفرع `main` تماماً (`allow_deletions: false`).
+   - إلزام حل المحادثات والتعليقات قبل الدمج (`required_conversation_resolution: true`).
+   - شمول وتطبيق الحماية التقنية على مديري المستودع (`enforce_admins: true`).
