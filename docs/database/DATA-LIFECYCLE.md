@@ -2,7 +2,7 @@
 
 ## 1. نظرة عامة
 
-يحدد هذا المستند الآلات الحالية للحالة (State Machines)، والقيود الصارمة للانتقالات، ومسؤولي الانتقالات للكيانات الأساسية في قاعدة البيانات.
+يحدد هذا المستند الآلات الحالية للحالة (State Machines)، والقيود الصارمة للانتقالات، ومسؤولي الانتقالات للكيانات الأساسية في قاعدة البيانات بعد استيفاء شروط سلامة رفع الوسائط والرسائل والحسابات.
 
 ---
 
@@ -13,28 +13,26 @@
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT : إنشاء مقال كمسودة
-    DRAFT --> PUBLISHED : نشر المقال (Publish)
+    DRAFT --> PUBLISHED : نشر المقال (يتطلب published_at IS NOT NULL)
     PUBLISHED --> DRAFT : إلغاء النشر (Unpublish to Draft)
-    PUBLISHED --> ARCHIVED : أرشفة المقال (Archive)
-    DRAFT --> ARCHIVED : أرشفة المسودة (Archive)
-    ARCHIVED --> [*] : حفظ مؤرشف بدون حذف نهائي
-
-    note right of ARCHIVED
-        لا توجد انتقالات خروج من ARCHIVED في المرحلة الأولى.
-        لا يوجد حذف نهائي (Hard Delete).
-    end note
+    PUBLISHED --> ARCHIVED : أرشفة المقال (يتطلب archived_at & archived_by IS NOT NULL)
+    DRAFT --> ARCHIVED : أرشفة المسودة
+    ARCHIVED --> [*] : حفظ مؤرشف دون إظهار في الاستعلامات العامة
 ```
 
 - **الحالات المسموحة**: `DRAFT`, `PUBLISHED`, `ARCHIVED`
-- **المسؤول المأذون (Transition Owner)**: `Admin` (عبر أدوات التحكم المصادق عليها فقط).
+- **المسؤول المأذون**: `Admin`
+- **قيود السلامة (Check Constraints)**:
+  - `CHECK (status != 'PUBLISHED' OR published_at IS NOT NULL)`
+  - `CHECK (status != 'ARCHIVED' OR (archived_at IS NOT NULL AND archived_by_user_id IS NOT NULL))`
 - **الانتقالات المسموحة**:
-  - `DRAFT` → `PUBLISHED` (نشر المقال وتنشيط الكاش وكتابة سجل تدقيق `PUBLISH_POST`).
+  - `DRAFT` → `PUBLISHED` (تعيين `published_at`, `updated_at` وسجل تدقيق `PUBLISH_POST`).
   - `PUBLISHED` → `DRAFT` (إعادة المقال كمسودة وحجبه عن العامة).
-  - `PUBLISHED` → `ARCHIVED` (أرشفة المقال وتعيين `archived_at` وسجل تدقيق `ARCHIVE_POST`).
-  - `DRAFT` → `ARCHIVED` (أرشفة المسودة وتعيين `archived_at`).
-- **الانتقالات المحظورة (Forbidden Transitions)**:
-  - `ARCHIVED` → `PUBLISHED` (محظور في المرحلة الأولى ريثما تحدد سياسة الاستعادة).
-  - أي انتقال يتضمن حذف السجل من قاعدة البيانات (`DELETE`).
+  - `PUBLISHED` → `ARCHIVED` (تعيين `archived_at`, `archived_by_user_id`, `updated_at`).
+  - `DRAFT` → `ARCHIVED` (أرشفة المسودة وتحديث التوقيع الزمني).
+- **الانتقالات المحظورة**:
+  - `ARCHIVED` → `PUBLISHED`
+  - حذف السجل نهائياً (`DELETE`).
 
 ---
 
@@ -43,46 +41,47 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT : إنشاء مشروع مسودة
-    DRAFT --> PUBLISHED : نشر المشروع
+    DRAFT --> PUBLISHED : نشر المشروع (يتطلب published_at IS NOT NULL)
     PUBLISHED --> DRAFT : إرجاع لمسودة
-    PUBLISHED --> ARCHIVED : أرشفة المشروع
+    PUBLISHED --> ARCHIVED : أرشفة المشروع (يتطلب archived_at & archived_by IS NOT NULL)
     DRAFT --> ARCHIVED : أرشفة المسودة
     ARCHIVED --> [*] : أرشفة دائمة
 ```
 
 - **الحالات المسموحة**: `DRAFT`, `PUBLISHED`, `ARCHIVED`
 - **المسؤول المأذون**: `Admin`
-- **الانتقالات المسموحة**:
-  - `DRAFT` → `PUBLISHED`
-  - `PUBLISHED` → `DRAFT`
-  - `PUBLISHED` → `ARCHIVED`
-  - `DRAFT` → `ARCHIVED`
-- **الانتقالات المحظورة**:
-  - `ARCHIVED` → `PUBLISHED`
-  - التعديل المباشر أو حذف السجل بشكل نهائي.
+- **قيود السلامة (Check Constraints)**:
+  - `CHECK (status != 'PUBLISHED' OR published_at IS NOT NULL)`
+  - `CHECK (status != 'ARCHIVED' OR (archived_at IS NOT NULL AND archived_by_user_id IS NOT NULL))`
 
 ---
 
 ### 2.3 دورة حياة الوسائط والأصول (`Media Asset Lifecycle`)
 
+تُستخدم صفوف `media_assets` نفسها كأرقام طلبات معلقة قبل إصدار رابط الرفع المباشر.
+
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING_UPLOAD : طلب Presigned URL
-    PENDING_UPLOAD --> ACTIVE : تأكيد الرفع بنجاح (Confirm Upload)
-    PENDING_UPLOAD --> ARCHIVED : انتهاء الصلاحية/إلغاء الطلب
-    ACTIVE --> ARCHIVED : أرشفة الأصل
-    ARCHIVED --> [*] : أرشفة السجل
+    [*] --> PENDING_UPLOAD : إنشاء سجل معلق (public_url = NULL, upload_expires_at محدد)
+    PENDING_UPLOAD --> ACTIVE : تأكيد الرفع بنجاح (تعيين public_url و uploaded_at)
+    PENDING_UPLOAD --> ARCHIVED : انتهاء upload_expires_at دون تأكيد الرفع
+    ACTIVE --> ARCHIVED : أرشفة الأصل (تعيين archived_at & archived_by)
+    ARCHIVED --> [*] : حفظ كأصل مؤرشف
 ```
 
 - **الحالات المسموحة**: `PENDING_UPLOAD`, `ACTIVE`, `ARCHIVED`
-- **المسؤول المأذون**: `Admin` (الطلب والتأكيد) / النظام (انتهاء الصلاحية الآلي).
+- **المسؤول المأذون**: `Admin` (الطلب والتأكيد) / خادم المنصة (الأرشفة عند انتهاء الصلاحية).
+- **قيود السلامة (Check Constraints)**:
+  - `CHECK (status != 'PENDING_UPLOAD' OR upload_expires_at IS NOT NULL)`
+  - `CHECK (status != 'ACTIVE' OR (public_url IS NOT NULL AND uploaded_at IS NOT NULL))`
+  - `CHECK (status != 'ARCHIVED' OR archived_at IS NOT NULL)`
 - **الانتقالات المسموحة**:
-  - `PENDING_UPLOAD` → `ACTIVE` (يحدث فقط عند استلام تأكيد الرفع المباشر الناجح من المخزن).
-  - `PENDING_UPLOAD` → `ARCHIVED` (عند انتهاء صلاحية رابط الرفع دون تأكيد).
-  - `ACTIVE` → `ARCHIVED` (أرشفة الأصل وتعيين `archived_at`).
+  - `PENDING_UPLOAD` → `ACTIVE` (يحدث فقط عند تأكيد الرفع المباشر الناجح، وتحديث `public_url`, `uploaded_at`, `updated_at`).
+  - `PENDING_UPLOAD` → `ARCHIVED` (يحدث تلقائياً عندما يتجاوز الوقت الحالي `upload_expires_at`).
+  - `ACTIVE` → `ARCHIVED` (أرشفة الأصل وتحديث التوقيع الزمني).
 - **الانتقالات المحظورة**:
-  - `ARCHIVED` → `ACTIVE` (غير مسموح بإنعاش الملفات المؤرشفة صراحة).
-  - مرر أي ثنائيات ملفات عبر التطبيق للتغيير.
+  - `ARCHIVED` → `ACTIVE`
+  - ربط الأصول ذات الحالة `PENDING_UPLOAD` أو `ARCHIVED` بأي مقال أو مشروع (يُسمح فقط بـ `ACTIVE`).
 
 ---
 
@@ -90,23 +89,25 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> UNREAD : وصول رسالة جديدة من زائر
-    UNREAD --> READ : فتح وقراءة الرسالة في اللوحة
-    READ --> ARCHIVED : أرشفة الرسالة
+    [*] --> UNREAD : وصول رسالة من زائر (توليد ip_address_hash بـ HMAC-SHA256)
+    UNREAD --> READ : فتح وقراءة الرسالة (تعيين read_at & updated_at)
+    READ --> ARCHIVED : أرشفة الرسالة (تعيين archived_at & archived_by)
     UNREAD --> ARCHIVED : أرشفة مباشرة
     ARCHIVED --> [*] : أرشفة دائمة
 ```
 
 - **الحالات المسموحة**: `UNREAD`, `READ`, `ARCHIVED`
-- **المسؤول المأذون**: الزائر (الإنشاء في `UNREAD`) / `Admin` (القراءة والأرشفة).
+- **المسؤول المأذون**: الزائر (`UNREAD`) / `Admin` (`READ`, `ARCHIVED`).
+- **قيود السلامة (Check Constraints)**:
+  - `CHECK (status != 'READ' OR read_at IS NOT NULL)`
+  - `CHECK (status != 'ARCHIVED' OR archived_at IS NOT NULL)`
 - **الانتقالات المسموحة**:
-  - `UNREAD` → `READ` (عند فتح الأدمن للرسالة في الصندوق الداخلي).
-  - `READ` → `ARCHIVED` (عند نقل الرسالة لأرشيف الصندوق).
-  - `UNREAD` → `ARCHIVED` (أرشفة الرسائل غير المقروءة).
+  - `UNREAD` → `READ` (عند قراءة الأدمن للرسالة، تعيين `read_at = CURRENT_TIMESTAMP`, `updated_at = CURRENT_TIMESTAMP`).
+  - `READ` → `ARCHIVED` (نقل الرسالة للأرشيف، تعيين `archived_at`, `archived_by_user_id`, `updated_at`).
+  - `UNREAD` → `ARCHIVED` (أرشفة غير المقروء).
 - **الانتقالات المحظورة**:
-  - `READ` → `UNREAD`
   - `ARCHIVED` → `UNREAD`
-  - حذف الرسالة نهائياً من الصندوق (`Hard Delete`).
+  - حذف الرسالة نهائياً (`DELETE`).
 
 ---
 
@@ -119,7 +120,6 @@ stateDiagram-v2
 ```
 
 - **الحالة المسموحة**: `APPEND_ONLY`
-- **المسؤول المأذون**: خادم التطبيق (تلقائياً أثناء تنفيذ حالات الاستخدام الإدارية).
 - **السياسة الصارمة**:
   - **يُسمح فقط بـ**: `INSERT`
   - **يُحظر تماماً**: `UPDATE`, `DELETE`, `TRUNCATE`
