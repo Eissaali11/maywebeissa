@@ -2,13 +2,14 @@
 
 ## 1. مخطط سياق النظام الخارجي (System Context Diagram)
 
-يوضح هذا المخطط العلاقة بين العناصر والجهات الخارجية (الزائر، الأدمن، خادم المنصة، قاعدة البيانات PostgreSQL، مخزن R2، ومزود البريد الخياري Resend).
+يوضح هذا المخطط العلاقة بين العناصر والجهات الخارجية (الزائر، الأدمن عبر متصفح العميل، خادم المنصة، قاعدة البيانات PostgreSQL، مخزن R2، ومزود البريد الخياري Resend).
 
 ```mermaid
 graph TD
-    subgraph External_Actors ["الفاعلون الخارجيون (External Actors)"]
+    subgraph External_Actors ["الفاعلون الخارجيون والتطبيقات (Actors & Clients)"]
         Visitor["الزائر (Visitor / Public User)"]
         Admin["مدير النظام (Admin User)"]
+        AdminBrowser["متصفح العميل الإداري (Admin Client Browser)"]
     end
 
     subgraph Core_Platform ["منصة الموقع الشخصي (Portfolio Platform)"]
@@ -23,22 +24,23 @@ graph TD
 
     %% Interactions
     Visitor -->|"1. تصفح الخدمات/المشاريع/المدونة والتواصل"| AppServer
-    Admin -->|"2. إدار المصادقة، المحتوى، وطلب Presigned URLs"| AppServer
+    Admin -->|"2. إدارة النطاقات وتفاصيل المحتوى"| AdminBrowser
+    AdminBrowser -->|"3. إرسال طلبات المصادقة وإدارة المحتوى والوسائط"| AppServer
 
-    AppServer -->|"3. الاستعلام والتخزين الذري للبيانات والسجلات"| PostgresDB
-    AppServer -->|"4. إصدار روابط الرفع المباشرة (Presigned URLs)"| Admin
+    AppServer -->|"4. الاستعلام والتخزين الذري للبيانات والسجلات"| PostgresDB
+    AppServer -->|"5. إصدار روابط الرفع المباشرة (Presigned URLs)"| AdminBrowser
 
-    Admin -->|"5. رفع أصول الميديا مباشرة (Direct Binary Upload)"| R2Storage
-    Visitor -->|"6. استعراض وقراءة صور وأصول الميديا العامة"| R2Storage
+    AdminBrowser -->|"6. رفع أصول الميديا مباشرة (Direct Binary Upload)"| R2Storage
+    Visitor -->|"7. استعراض وقراءة صور وأصول الميديا العامة"| R2Storage
 
-    AppServer -.->"7. إرسال إشعارات الرسائل الواردة (اختياري)"| EmailProvider
+    AppServer -.->"8. إرسال إشعارات الرسائل الواردة (اختياري)"| EmailProvider
 
     %% Styling
     classDef actorStyle fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;
     classDef appStyle fill:#0f172a,stroke:#f59e0b,stroke-width:3px,color:#fff;
     classDef storageStyle fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#fff;
 
-    class Visitor,Admin actorStyle;
+    class Visitor,Admin,AdminBrowser actorStyle;
     class AppServer appStyle;
     class PostgresDB,R2Storage,EmailProvider storageStyle;
 ```
@@ -54,7 +56,7 @@ graph TB
     subgraph Modular_Monolith ["المنصة الأحادية المجزأة (src/modules/*)"]
 
         subgraph Auth_Module ["موديول المصادقة (auth)"]
-            Auth_Pres["presentation (Auth Routes/Login UI)"]
+            Auth_Pres["presentation (Auth UI & Action Wrappers)"]
             Auth_App["application (Session/Login Services)"]
             Auth_Dom["domain (Admin User Entity)"]
             Auth_Infra["infrastructure (Better Auth / Session Store)"]
@@ -119,41 +121,41 @@ graph TB
 
 ## 3. تدفق البيانات ورفع الوسائط المباشر (Data & Direct Media Upload Flow)
 
-يرسم هذا التخطيط التسلسلي نمط رفع أصول الوسائط عبر **Presigned URL**، مؤكداً عدم مرور الملفات الثنائية عبر خادم التطبيق إطلاقاً وحفظ البيانات الوصفية فقط في PostgreSQL.
+يرسم هذا التخطيط التسلسلي نمط رفع أصول الوسائط المباشر عبر **Presigned URL** باستخدام المفهوم الإجرائي (محتوى العقود والروابط البرمجية يُحدد لاحقاً في وثيقة عقود الـ API)، مؤكداً عدم مرور الملفات الثنائية عبر خادم التطبيق إطلاقاً وحفظ البيانات الوصفية فقط في PostgreSQL.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Admin as مدير النظام (Admin)
-    participant Browser as متصفح الأدمن (Browser UI)
+    participant Browser as متصفح العميل (Client Browser UI)
     participant AppServer as خادم التطبيق (Next.js Application Server)
-    participant R2Storage as مخزن الأصول (Cloudflare R2 Storage)
+    participant R2Storage as مخزن الأصول المباشر (Cloudflare R2 Storage)
     participant PostgresDB as قاعدة البيانات (PostgreSQL DB)
 
-    %% Step 1: Request Presigned URL
+    %% Step 1: Request Presigned URL Authorization
     Admin->>Browser: يختار ملف صورة/مجسم ويطلب الرفع
-    Browser->>AppServer: 1. طلب رابط رفع (POST /api/media/presigned) مع البيانات الوصفية (Filename, MIME, Size)
+    Browser->>AppServer: 1. طلب التخويل برابط الرفع المباشر (مع البيانات الوصفية: الاسم، النوع، الحجم)
 
-    note over AppServer: فحص الجلسة، نوع MIME، الحجم، والامتداد (Validation Gate)
+    note over AppServer: فحص صلاحية الجلسة، نوع MIME، الحجم، والامتداد (Validation Gate)
 
-    AppServer->>AppServer: 2. توليد Presigned Upload URL قصير الأجل عبر S3 SDK
+    AppServer->>AppServer: 2. توليد رابط الرفع المباشر قصير الأجل (Presigned Upload Authorization)
 
-    AppServer-->>Browser: 3. إرجاع Presigned URL والمُعرِّف الفريد (Asset ID)
+    AppServer-->>Browser: 3. إرجاع رابط الرفع المباشر التخويلي والمُعرِّف الفريد للأصل
 
     %% Step 2: Direct Binary Upload
-    Browser->>R2Storage: 4. رفع الملف الثنائي مباشرة (PUT Presigned URL)
+    Browser->>R2Storage: 4. رفع الثنائيات مباشرة إلى المخزن عبر رابط الرفع التخويلي
 
-    alt رفع فاشل أو منتهي الصلاحية
-        R2Storage-->>Browser: 5a. خطأ 403 Forbidden / Expired
-        Browser-->>Admin: عرض تنبيه الفشل وإمكانية إعادة المحاولة
+    alt رفع فاشل أو انتهاء صلاحية التخويل
+        R2Storage-->>Browser: 5a. رفض الرفع (مفتاح منتهي أو غير مصرح)
+        Browser-->>Admin: عرض تنبيه الفشل مع خيار إعادة المحاولة
     else رفع ناجح
-        R2Storage-->>Browser: 5b. تأكيد 200 OK
+        R2Storage-->>Browser: 5b. تأكيد الرفع بنجاح من المخزن
 
         %% Step 3: Metadata Confirmation
-        Browser->>AppServer: 6. تأكيد الرفع (POST /api/media/confirm) برقم الأصل
-        AppServer->>PostgresDB: 7. تخزين البيانات الوصفية (Metadata) ورابط الأصل النهائي
-        AppServer->>PostgresDB: 8. كتابة سجل تدقيق UPLOAD_MEDIA غير قابل للتعديل
-        PostgresDB-->>AppServer: 9. تأكيد العملية الذرية
-        AppServer-->>Browser: 10. إرجاع نجاح الرفع وإظهار الأصل في مكتبة الوسائط
+        Browser->>AppServer: 6. إرسال تأكيد اكتمال الرفع المباشر برقم الأصل
+        AppServer->>PostgresDB: 7. تخزين البيانات الوصفية ورابط الأصل النهائي
+        AppServer->>PostgresDB: 8. كتابة سجل تدقيق ذرّي لعملية الرفع
+        PostgresDB-->>AppServer: 9. تأكيد التخزين الذري
+        AppServer-->>Browser: 10. إرجاع نجاح العملية وإظهار الأصل في مكتبة الوسائط
     end
 ```
