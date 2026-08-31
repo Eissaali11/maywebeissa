@@ -6,6 +6,7 @@ export interface DbSafetyOptions {
 export function isApprovedTestDatabase(dbName?: string): boolean {
   if (!dbName || typeof dbName !== 'string') return false;
   const name = dbName.trim();
+  if (name.includes('non_test')) return false;
   if (name === 'portfolio_test_db') return true;
   if (name.endsWith('_test') || name.endsWith('_test_db')) return true;
   return false;

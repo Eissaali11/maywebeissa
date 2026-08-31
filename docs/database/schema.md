@@ -4,7 +4,7 @@
 | ------------------------------- | ------------------------------------------------------------------------- |
 | **المعرف**                      | `SCHEMA-001-PORTFOLIO-PLATFORM`                                           |
 | **الإصدار**                     | `1.3.0`                                                                   |
-| **الحالة**                      | **DRAFT — Awaiting COO Verification (Better Auth 1.7.2 Foundation)**      |
+| **الحالة**                      | **ACCEPTED — COO Approved (Database Foundation FROZEN)**                  |
 | **التاريخ**                     | 31 أغسطس 2026                                                             |
 | **قاعدة البيانات المقترحة**     | PostgreSQL 16+ (مع تفعيل إضافة `pgcrypto`)                                |
 | **مكافئ التوثيق (Better Auth)** | Better Auth Drizzle Adapter (الإصدار المثبت `1.7.2` - 16 جدولاً)          |

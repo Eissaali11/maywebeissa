@@ -56,6 +56,9 @@ jobs:
       - name: PGlite Isolated Tests
         run: npm run test:pglite
 
+      - name: Safety Guard & Smoke Tests
+        run: npm run test -- src/tests/db-safety-guard.test.ts src/tests/smoke.test.ts
+
       - name: Real PostgreSQL 16 Integration & Security Tests
         env:
           DB_USER: postgres
