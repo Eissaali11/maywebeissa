@@ -63,6 +63,7 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: portfolio_test_db
+          ALLOW_DESTRUCTIVE_DB_TESTS: 'true'
         run: npm run test:postgres
 
       - name: Schema Drift Verification

@@ -27,10 +27,45 @@ function resolveImportPath(importSpecifier, containingFilePath) {
 function getModuleName(filePath) {
   const normalized = filePath.replace(/\\/g, '/');
   const match = normalized.match(/\/src\/modules\/([^\/]+)/);
-  if (match && APPROVED_MODULES.includes(match[1])) {
+  if (match) {
     return match[1];
   }
   return null;
+}
+
+/**
+ * Checks if a target path inside another module corresponds to an approved public surface
+ */
+function isApprovedCrossModulePublicSurface(targetModule, resolvedPath) {
+  const normalized = resolvedPath.replace(/\\/g, '/');
+  const publicSurfacePatterns = [
+    `/src/modules/${targetModule}/application/contracts`,
+    `/src/modules/${targetModule}/application/interfaces`,
+    `/src/modules/${targetModule}/domain/interfaces`,
+  ];
+
+  return publicSurfacePatterns.some((pattern) => normalized.includes(pattern));
+}
+
+/**
+ * Scans src/modules/ directory to ensure only the six approved Phase-1 modules exist
+ */
+function checkUnapprovedModules(modulesDir) {
+  const violations = [];
+  if (!fs.existsSync(modulesDir)) return violations;
+
+  const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (!APPROVED_MODULES.includes(entry.name)) {
+        violations.push(
+          `Unapproved module detected: ${entry.name}. ADR-001 allows only: ${APPROVED_MODULES.join(', ')}`
+        );
+      }
+    }
+  }
+
+  return violations;
 }
 
 /**
@@ -107,21 +142,21 @@ function analyzeFileImports(filePath, customContent = null) {
         }
       }
 
-      // Rule 3: Cross-module import restrictions for src/modules/
-      if (fileModule) {
+      // Rule 3: Strict Cross-module import policy (DEFAULT-DENY)
+      if (fileModule && APPROVED_MODULES.includes(fileModule)) {
         const targetModule = getModuleName(resolvedPath);
         if (targetModule && targetModule !== fileModule) {
-          // Rule 3a: Cross-module import of infrastructure is forbidden
-          if (resolvedPath.includes(`/src/modules/${targetModule}/infrastructure`)) {
+          if (!APPROVED_MODULES.includes(targetModule)) {
             fileViolations.push(
-              `Cross-module infrastructure import forbidden: ${fileModule} -> ${targetModule}/infrastructure (${path.relative(process.cwd(), filePath)})`
+              `Cross-module import targeting unapproved module '${targetModule}' (${path.relative(process.cwd(), filePath)})`
             );
-          }
-          // Rule 3b: Cross-module import of presentation is forbidden
-          if (resolvedPath.includes(`/src/modules/${targetModule}/presentation`)) {
-            fileViolations.push(
-              `Cross-module presentation import forbidden: ${fileModule} -> ${targetModule}/presentation (${path.relative(process.cwd(), filePath)})`
-            );
+          } else {
+            // Must target an approved cross-module public surface
+            if (!isApprovedCrossModulePublicSurface(targetModule, resolvedPath)) {
+              fileViolations.push(
+                `Forbidden cross-module import: ${fileModule} -> ${targetModule} (${path.relative(process.cwd(), filePath)} imports '${importSpecifier}'). ADR-001 allows cross-module imports only from application/contracts, application/interfaces, or domain/interfaces.`
+              );
+            }
           }
         }
       }
@@ -141,7 +176,12 @@ function runRepositoryScan() {
   console.log('🏗️ Running Architecture Boundary Verification Gate (ADR-001)...');
   const violations = [];
   const srcDir = path.join(process.cwd(), 'src');
+  const modulesDir = path.join(srcDir, 'modules');
 
+  // 1. Enforce six-module directory limit
+  violations.push(...checkUnapprovedModules(modulesDir));
+
+  // 2. Scan all source code files
   function scan(dir) {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -163,7 +203,9 @@ function runRepositoryScan() {
     process.exit(1);
   }
 
-  console.log('✅ PASS: Architecture boundary rules satisfied (ADR-001 enforced via AST parsing).');
+  console.log(
+    '✅ PASS: Architecture boundary rules satisfied (ADR-001 enforced via AST parsing & DEFAULT-DENY).'
+  );
 }
 
 /**
@@ -172,32 +214,86 @@ function runRepositoryScan() {
 function runSelfTest() {
   console.log('🧪 Running Architecture Gate Self-Test with AST fixtures...');
 
-  const fixtureDir = path.join(process.cwd(), 'src', 'modules', 'temp_fixture_test');
-  fs.mkdirSync(fixtureDir, { recursive: true });
-
   const testCases = [
     {
-      name: 'Negative Test 1: UI -> Direct DB import',
+      name: 'Fixture A: UI -> Direct DB import',
       path: path.join(process.cwd(), 'src', 'components', 'BadUi.tsx'),
       content: `import { pgTable } from 'drizzle-orm'; export const test = 1;`,
       shouldFail: true,
     },
     {
-      name: 'Negative Test 2: Cross-Module Infrastructure Import',
+      name: 'Fixture B: posts -> projects/infrastructure/repository',
       path: path.join(process.cwd(), 'src', 'modules', 'posts', 'application', 'bad_infra.ts'),
-      content: `import { repo } from '@/modules/projects/infrastructure/repo';`,
+      content: `import { repo } from '@/modules/projects/infrastructure/project.repository';`,
       shouldFail: true,
     },
     {
-      name: 'Negative Test 3: Cross-Module Presentation Import',
+      name: 'Fixture C: posts -> projects/presentation/view',
       path: path.join(process.cwd(), 'src', 'modules', 'posts', 'application', 'bad_pres.ts'),
-      content: `import { View } from '@/modules/projects/presentation/view';`,
+      content: `import { ProjectCard } from '@/modules/projects/presentation/project-card';`,
       shouldFail: true,
     },
     {
-      name: 'Positive Test 1: Approved Cross-Module Application Contract Import',
+      name: 'Fixture D: posts -> projects/application/internal-use-case',
+      path: path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        'posts',
+        'application',
+        'bad_app_internal.ts'
+      ),
+      content: `import { createProject } from '@/modules/projects/application/create-project';`,
+      shouldFail: true,
+    },
+    {
+      name: 'Fixture E: posts -> projects/domain/entities/project',
+      path: path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        'posts',
+        'application',
+        'bad_dom_internal.ts'
+      ),
+      content: `import { ProjectEntity } from '@/modules/projects/domain/entities/project';`,
+      shouldFail: true,
+    },
+    {
+      name: 'Fixture F: unapproved module src/modules/payments',
+      checkUnapprovedModule: 'payments',
+      shouldFail: true,
+    },
+    {
+      name: 'Fixture G: posts -> projects/application/contracts/project-reader',
       path: path.join(process.cwd(), 'src', 'modules', 'posts', 'application', 'good_contract.ts'),
-      content: `import { ProjectContract } from '@/modules/projects/application/contracts';`,
+      content: `import { ProjectReader } from '@/modules/projects/application/contracts/project-reader';`,
+      shouldFail: false,
+    },
+    {
+      name: 'Fixture H: posts -> projects/application/interfaces/project-query',
+      path: path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        'posts',
+        'application',
+        'good_app_interface.ts'
+      ),
+      content: `import { ProjectQuery } from '@/modules/projects/application/interfaces/project-query';`,
+      shouldFail: false,
+    },
+    {
+      name: 'Fixture I: posts -> projects/domain/interfaces/project-reference',
+      path: path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        'posts',
+        'application',
+        'good_dom_interface.ts'
+      ),
+      content: `import { ProjectReference } from '@/modules/projects/domain/interfaces/project-reference';`,
       shouldFail: false,
     },
   ];
@@ -205,6 +301,36 @@ function runSelfTest() {
   let passedAllSelfTests = true;
 
   for (const tc of testCases) {
+    if (tc.checkUnapprovedModule) {
+      const dummyUnapprovedDir = path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        tc.checkUnapprovedModule
+      );
+      fs.mkdirSync(dummyUnapprovedDir, { recursive: true });
+
+      const violations = checkUnapprovedModules(path.join(process.cwd(), 'src', 'modules'));
+      fs.rmdirSync(dummyUnapprovedDir);
+
+      const failed = violations.length > 0;
+      if (tc.shouldFail && !failed) {
+        console.error(`❌ Self-test FAILED: ${tc.name} expected violations but passed!`);
+        passedAllSelfTests = false;
+      } else if (!tc.shouldFail && failed) {
+        console.error(
+          `❌ Self-test FAILED: ${tc.name} expected pass but got violations:`,
+          violations
+        );
+        passedAllSelfTests = false;
+      } else {
+        console.log(
+          `  ✓ ${tc.name}: ${tc.shouldFail ? 'Correctly Rejected' : 'Correctly Accepted'}`
+        );
+      }
+      continue;
+    }
+
     const parent = path.dirname(tc.path);
     fs.mkdirSync(parent, { recursive: true });
     fs.writeFileSync(tc.path, tc.content, 'utf-8');
@@ -227,18 +353,13 @@ function runSelfTest() {
     }
   }
 
-  // Cleanup temporary fixture directory
-  if (fs.existsSync(fixtureDir)) {
-    fs.rmSync(fixtureDir, { recursive: true, force: true });
-  }
-
   if (!passedAllSelfTests) {
     console.error('❌ Architecture Self-Test FAILED.');
     process.exit(1);
   }
 
   console.log(
-    '✅ Architecture Gate Self-Test PASSED (Negative and Positive AST fixtures verified).'
+    '✅ Architecture Gate Self-Test PASSED (All 9 AST negative/positive fixtures verified).'
   );
   process.exit(0);
 }

@@ -3,6 +3,8 @@ import postgres from 'postgres';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { assertTestDatabaseSafety } from './utils/db-safety-guard';
+
 describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability Proof', () => {
   const user = process.env.DB_USER || 'postgres';
   const pass = process.env.DB_PASS || 'postgrespassword';
@@ -18,6 +20,17 @@ describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability 
   beforeAll(async () => {
     sql = postgres(connectionString);
 
+    // 1. Verify actual connected database name from PostgreSQL
+    const [currentDbRes] = await sql<{ current_database: string }[]>`SELECT current_database();`;
+    const connectedDbName = currentDbRes?.current_database;
+
+    // 2. Fail closed if safety check fails
+    assertTestDatabaseSafety({
+      currentDatabase: connectedDbName,
+      allowDestructiveOptIn: process.env.ALLOW_DESTRUCTIVE_DB_TESTS,
+    });
+
+    // 3. Execute destructive reset only after safety validation succeeds
     await sql.unsafe(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
 
     const drizzleDir = path.join(process.cwd(), 'drizzle');

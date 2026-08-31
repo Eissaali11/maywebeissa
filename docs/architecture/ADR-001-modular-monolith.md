@@ -2,7 +2,7 @@
 
 ## 1. حالة القرار (Status)
 
-`DRAFT — Under COO Review`
+`ACCEPTED — COO Approved`
 
 ---
 
@@ -50,7 +50,7 @@
 
 ## 5. القرار والمعللات (Decision & Rationale)
 
-**القرار المقترح (Proposed Decision):** المعمارية الأحادية المجزأة (Next.js Modular Monolith) كنظام أساسي لبناء منصة الموقع الشخصي (في انتظار الاعتماد النهائي من الـ COO).
+**القرار المعتمد (Approved Decision):** المعمارية الأحادية المجزأة (Next.js Modular Monolith) كنظام أساسي لبناء منصة الموقع الشخصي (معتمد رسمياً من الـ COO).
 
 ### المعللات الرئيسية:
 
