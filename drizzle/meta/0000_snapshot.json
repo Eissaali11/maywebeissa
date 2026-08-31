@@ -1,5 +1,5 @@
 {
-  "id": "f439ea2c-f310-4597-b693-af428ee6ce12",
+  "id": "1fcf0d3a-e361-4e45-85b8-0d2e5293fd7a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -63,8 +63,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "refreshToken_expires_at": {
-          "name": "refreshToken_expires_at",
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false

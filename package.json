@@ -9,8 +9,11 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:pglite": "vitest run src/tests/db-schema-foundation.test.ts",
+    "test:postgres": "vitest run src/tests/db-real-postgres.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:drift": "drizzle-kit generate",
     "secret-scan": "secretlint \"**/*\"",
     "format:check": "prettier --check ."
   },

@@ -1,6 +1,6 @@
 {
-  "id": "00122c22-6823-4306-93fc-59c30a352ebd",
-  "prevId": "f439ea2c-f310-4597-b693-af428ee6ce12",
+  "id": "d09dfc84-7ca4-4ea2-a753-6370f682793d",
+  "prevId": "1fcf0d3a-e361-4e45-85b8-0d2e5293fd7a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -63,8 +63,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "refreshToken_expires_at": {
-          "name": "refreshToken_expires_at",
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false

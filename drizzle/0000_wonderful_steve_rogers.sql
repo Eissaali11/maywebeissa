@@ -8,7 +8,7 @@ CREATE TABLE "account" (
 	"refresh_token" text,
 	"id_token" text,
 	"access_token_expires_at" timestamp with time zone,
-	"refreshToken_expires_at" timestamp with time zone,
+	"refresh_token_expires_at" timestamp with time zone,
 	"scope" text,
 	"password" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
