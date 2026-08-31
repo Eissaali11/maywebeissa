@@ -36,7 +36,7 @@ describe('DATA-FOUNDATION-001 — Destructive Database Safety Guard Tests', () =
 
   it('SAFE-DB-003: non-test database name + opt-in is REJECTED', () => {
     const result = verifyTestDatabaseSafety({
-      currentDatabase: 'portfolio_non_test',
+      currentDatabase: 'portfolio_staging',
       allowDestructiveOptIn: 'true',
     });
     expect(result.safe).toBe(false);
@@ -44,7 +44,7 @@ describe('DATA-FOUNDATION-001 — Destructive Database Safety Guard Tests', () =
 
     expect(() =>
       assertTestDatabaseSafety({
-        currentDatabase: 'portfolio_non_test',
+        currentDatabase: 'portfolio_staging',
         allowDestructiveOptIn: 'true',
       })
     ).toThrow(
