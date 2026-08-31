@@ -47,6 +47,9 @@ jobs:
       - name: Typecheck Verification
         run: npm run typecheck
 
+      - name: Architecture Boundary Check
+        run: npm run architecture:check
+
       - name: PGlite Isolated Tests
         run: npm run test:pglite
 
@@ -67,6 +70,15 @@ jobs:
           DB_PORT: 5432
           DB_NAME: portfolio_test_db
         run: npm run db:drift
+
+      - name: Migration History Consistency Check
+        env:
+          DB_USER: postgres
+          DB_PASS: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: portfolio_test_db
+        run: npm run db:check
 
       - name: Production Build Verification
         run: npm run build
