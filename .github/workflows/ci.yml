@@ -73,6 +73,7 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: portfolio_test_db
+          DATABASE_URL: postgres://postgres:postgrespassword@localhost:5432/portfolio_test_db
         run: npm run db:drift
 
       - name: Migration History Consistency Check
@@ -82,6 +83,7 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: portfolio_test_db
+          DATABASE_URL: postgres://postgres:postgrespassword@localhost:5432/portfolio_test_db
         run: npm run db:check
 
       - name: Production Build Verification
