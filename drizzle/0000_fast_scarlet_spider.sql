@@ -1,14 +1,14 @@
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
---> statement-breakpoint
 CREATE TABLE "account" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
+	"issuer" varchar(255) NOT NULL,
 	"account_id" varchar(255) NOT NULL,
 	"provider_id" varchar(255) NOT NULL,
 	"access_token" text,
 	"refresh_token" text,
+	"id_token" text,
 	"access_token_expires_at" timestamp with time zone,
-	"refresh_token_expires_at" timestamp with time zone,
+	"refreshToken_expires_at" timestamp with time zone,
 	"scope" text,
 	"password" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -33,7 +33,6 @@ CREATE TABLE "user" (
 	"email" varchar(255) NOT NULL,
 	"email_verified" boolean DEFAULT false NOT NULL,
 	"image" text,
-	"password_hash" varchar(255),
 	"role" varchar(20) DEFAULT 'ADMIN' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -231,6 +230,7 @@ ALTER TABLE "project_media_assets" ADD CONSTRAINT "project_media_assets_project_
 ALTER TABLE "project_media_assets" ADD CONSTRAINT "project_media_assets_media_asset_id_media_assets_id_fk" FOREIGN KEY ("media_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "contact_messages" ADD CONSTRAINT "contact_messages_archived_by_user_id_user_id_fk" FOREIGN KEY ("archived_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actor_user_id_user_id_fk" FOREIGN KEY ("actor_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "account_issuer_account_id_unique" ON "account" USING btree ("issuer","account_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_categories_lower_slug" ON "categories" USING btree (lower("slug"));--> statement-breakpoint
 CREATE INDEX "idx_posts_status_published_at" ON "posts" USING btree ("status","published_at");--> statement-breakpoint
 CREATE INDEX "idx_posts_category_id" ON "posts" USING btree ("category_id");--> statement-breakpoint
@@ -248,20 +248,4 @@ CREATE UNIQUE INDEX "idx_project_media_single_cover" ON "project_media_assets" U
 CREATE INDEX "idx_project_media_asset_id" ON "project_media_assets" USING btree ("media_asset_id");--> statement-breakpoint
 CREATE INDEX "idx_contact_messages_status_created_at" ON "contact_messages" USING btree ("status","created_at");--> statement-breakpoint
 CREATE INDEX "idx_audit_logs_actor_created_at" ON "audit_logs" USING btree ("actor_user_id","created_at");--> statement-breakpoint
-CREATE INDEX "idx_audit_logs_entity" ON "audit_logs" USING btree ("entity_type","entity_id");--> statement-breakpoint
-CREATE OR REPLACE FUNCTION prevent_audit_logs_mutation()
-RETURNS TRIGGER AS $$
-BEGIN
-    RAISE EXCEPTION 'audit_logs is an append-only immutable table. UPDATE, DELETE, and TRUNCATE are strictly forbidden.';
-END;
-$$ LANGUAGE plpgsql;
---> statement-breakpoint
-CREATE OR REPLACE TRIGGER audit_logs_immutable_row_trigger
-BEFORE UPDATE OR DELETE ON audit_logs
-FOR EACH ROW
-EXECUTE FUNCTION prevent_audit_logs_mutation();
---> statement-breakpoint
-CREATE OR REPLACE TRIGGER audit_logs_immutable_truncate_trigger
-BEFORE TRUNCATE ON audit_logs
-FOR EACH STATEMENT
-EXECUTE FUNCTION prevent_audit_logs_mutation();
+CREATE INDEX "idx_audit_logs_entity" ON "audit_logs" USING btree ("entity_type","entity_id");

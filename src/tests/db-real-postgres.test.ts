@@ -18,15 +18,19 @@ describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability 
           max: 1,
         });
 
-    // Clean public schema on real PostgreSQL 16
     await sqlClient`DROP SCHEMA public CASCADE;`;
     await sqlClient`CREATE SCHEMA public;`;
 
-    // Read and apply full migration SQL in a single query execution
-    const migrationPath = path.join(process.cwd(), 'drizzle', '0000_clean_korvac.sql');
-    const migrationSql = fs.readFileSync(migrationPath, 'utf-8');
+    const drizzleDir = path.join(process.cwd(), 'drizzle');
+    const sqlFiles = fs
+      .readdirSync(drizzleDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
 
-    await sqlClient.unsafe(migrationSql);
+    for (const file of sqlFiles) {
+      const migrationSql = fs.readFileSync(path.join(drizzleDir, file), 'utf-8');
+      await sqlClient.unsafe(migrationSql);
+    }
   }, 15000);
 
   afterAll(async () => {
@@ -66,11 +70,60 @@ describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability 
     }
   });
 
+  it('AUTH-SCHEMA-001 (Real PG16): Better Auth core tables exist', async () => {
+    const res = await sqlClient<
+      { table_name: string }[]
+    >`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';`;
+    const tableNames = res.map((r) => r.table_name);
+    for (const t of ['user', 'session', 'account', 'verification']) {
+      expect(tableNames).toContain(t);
+    }
+  });
+
+  it('AUTH-SCHEMA-002 (Real PG16): user table does NOT contain password_hash column', async () => {
+    const res = await sqlClient<
+      { column_name: string }[]
+    >`SELECT column_name FROM information_schema.columns WHERE table_name = 'user';`;
+    const cols = res.map((c) => c.column_name);
+    expect(cols).not.toContain('password_hash');
+  });
+
+  it('AUTH-SCHEMA-003 (Real PG16): credential password exists in account.password', async () => {
+    const res = await sqlClient<
+      { column_name: string }[]
+    >`SELECT column_name FROM information_schema.columns WHERE table_name = 'account';`;
+    const cols = res.map((c) => c.column_name);
+    expect(cols).toContain('password');
+  });
+
+  it('AUTH-SCHEMA-004 (Real PG16): account contains Better Auth 1.7.2 required identity fields', async () => {
+    const res = await sqlClient<
+      { column_name: string }[]
+    >`SELECT column_name FROM information_schema.columns WHERE table_name = 'account';`;
+    const cols = res.map((c) => c.column_name);
+    expect(cols).toContain('issuer');
+    expect(cols).toContain('account_id');
+    expect(cols).toContain('provider_id');
+    expect(cols).toContain('id_token');
+  });
+
   it('2. Real Postgres 16 pgcrypto & Single-Admin Guard', async () => {
+    await sqlClient`DELETE FROM "user";`;
     await sqlClient`INSERT INTO "user" (name, email, role) VALUES ('Admin One', 'admin1@real.com', 'ADMIN');`;
 
     await expect(
       sqlClient`INSERT INTO "user" (name, email, role) VALUES ('Admin Two', 'admin2@real.com', 'ADMIN');`
+    ).rejects.toThrow();
+  });
+
+  it('AUTH-SCHEMA-005 (Real PG16): composite unique index on (issuer, account_id) is enforced', async () => {
+    const users = await sqlClient<{ id: string }[]>`SELECT id FROM "user" LIMIT 1;`;
+    const userId = users[0].id;
+
+    await sqlClient`INSERT INTO account (user_id, issuer, account_id, provider_id) VALUES (${userId}, 'https://auth.example.com', 'acc1', 'credential');`;
+
+    await expect(
+      sqlClient`INSERT INTO account (user_id, issuer, account_id, provider_id) VALUES (${userId}, 'https://auth.example.com', 'acc1', 'credential');`
     ).rejects.toThrow();
   });
 
@@ -96,13 +149,11 @@ describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability 
     const users = await sqlClient<{ id: string }[]>`SELECT id FROM "user" LIMIT 1;`;
     const adminId = users[0].id;
 
-    // Check negative file size
     await expect(
       sqlClient`INSERT INTO media_assets (filename, storage_key, mime_type, file_size_bytes, status, uploaded_by_user_id, upload_expires_at)
        VALUES ('file.png', 'k1', 'image/png', -100, 'PENDING_UPLOAD', ${adminId}, NOW() + INTERVAL '1 hour');`
     ).rejects.toThrow();
 
-    // Valid insert with alt_text, width, height, checksum
     await sqlClient`INSERT INTO media_assets (filename, storage_key, mime_type, file_size_bytes, alt_text, width, height, checksum, status, uploaded_by_user_id, upload_expires_at)
      VALUES ('file.png', 'k1', 'image/png', 2048, 'Alt text example', 1920, 1080, 'a1b2c3d4e5f6', 'PENDING_UPLOAD', ${adminId}, NOW() + INTERVAL '1 hour');`;
   });
@@ -132,11 +183,9 @@ describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability 
      VALUES ('m2.png', 'm2key', 'image/png', 200, 'PENDING_UPLOAD', ${adminId}, NOW() + INTERVAL '1 hour') RETURNING id;`;
     const m2Id = m2Res[0].id;
 
-    // Attach Media 1 as cover
     await sqlClient`INSERT INTO post_media_assets (post_id, media_asset_id, is_cover, display_order)
      VALUES (${postId}, ${m1Id}, true, 0);`;
 
-    // Attempt to attach Media 2 as cover MUST FAIL
     await expect(
       sqlClient`INSERT INTO post_media_assets (post_id, media_asset_id, is_cover, display_order)
        VALUES (${postId}, ${m2Id}, true, 1);`
@@ -153,17 +202,14 @@ describe('DATA-FOUNDATION-001 — Real PostgreSQL 16 Integration & Immutability 
      VALUES (${adminId}, 'CREATE_POST', 'POST', '{"post_id": "123"}') RETURNING id;`;
     const auditId = auditRes[0].id;
 
-    // 1. UPDATE -> MUST FAIL
     await expect(
       sqlClient`UPDATE audit_logs SET action = 'MODIFIED' WHERE id = ${auditId};`
     ).rejects.toThrow(/audit_logs is an append-only immutable table/);
 
-    // 2. DELETE -> MUST FAIL
     await expect(sqlClient`DELETE FROM audit_logs WHERE id = ${auditId};`).rejects.toThrow(
       /audit_logs is an append-only immutable table/
     );
 
-    // 3. TRUNCATE -> MUST FAIL
     await expect(sqlClient`TRUNCATE TABLE audit_logs;`).rejects.toThrow(
       /audit_logs is an append-only immutable table/
     );

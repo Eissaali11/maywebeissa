@@ -2,7 +2,7 @@
 
 ## 1. نظرة عامة
 
-يقدم هذا المستند المخطط البصري الهيكلي لجميع الجداول الـ 16 المعتمدة في منصة الموقع الشخصي (4 جداول Better Auth للمصادقة والجلسات + 12 جدول بيانات للنظام)، موضحاً المفاتيح والقيود المحدثة.
+يقدم هذا المستند المخطط البصري الهيكلي لجميع الجداول الـ 16 المعتمدة في منصة الموقع الشخصي (4 جداول Better Auth 1.7.2 للمصادقة والجلسات + 12 جدول بيانات للنظام)، موضحاً المفاتيح والقيود المحدثة.
 
 ---
 
@@ -41,7 +41,6 @@ erDiagram
         varchar email UK
         boolean email_verified
         text image
-        varchar password_hash
         varchar role UK "CHECK role = ADMIN"
         timestamptz created_at
         timestamptz updated_at
@@ -61,10 +60,12 @@ erDiagram
     account {
         uuid id PK
         uuid user_id FK
-        varchar account_id
+        varchar issuer "UNIQUE(issuer, account_id)"
+        varchar account_id "UNIQUE(issuer, account_id)"
         varchar provider_id
         text access_token
         text refresh_token
+        text id_token
         timestamptz access_token_expires_at
         timestamptz refresh_token_expires_at
         text scope
