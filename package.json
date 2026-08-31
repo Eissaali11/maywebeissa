@@ -2,6 +2,9 @@
   "name": "maywebeissa",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,6 +12,7 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "architecture:check": "node scripts/architecture-check.mjs",
+    "architecture:self-test": "node scripts/architecture-check.mjs --self-test",
     "test": "vitest run",
     "test:pglite": "vitest run src/tests/db-schema-foundation.test.ts",
     "test:postgres": "vitest run src/tests/db-real-postgres.test.ts",

@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -47,8 +47,11 @@ jobs:
       - name: Typecheck Verification
         run: npm run typecheck
 
-      - name: Architecture Boundary Check
+      - name: Architecture Boundary Verification
         run: npm run architecture:check
+
+      - name: Architecture Boundary Self-Test
+        run: npm run architecture:self-test
 
       - name: PGlite Isolated Tests
         run: npm run test:pglite
