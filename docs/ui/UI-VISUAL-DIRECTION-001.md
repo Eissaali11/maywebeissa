@@ -1,4 +1,5 @@
 # UI-VISUAL-DIRECTION-001
+
 ## Premium Visual Identity & Hero Art Direction Specification
 
 **Phase:** UI-VISUAL-DIRECTION-001  
@@ -7,7 +8,7 @@
 **Governing Motion Base:** `docs/ui/UI-MOTION-SPEC-001.md`  
 **Proven Motion Baseline:** `UI-MOTION-POC-001` (`PROVEN / MERGED`)  
 **Date:** 2026-09-01  
-**Status:** DRAFT — FOR OWNER / COO REVIEW & SELECTION  
+**Status:** DRAFT — FOR OWNER / COO REVIEW & SELECTION
 
 ---
 
@@ -21,6 +22,7 @@
 The `maywebeissa` portfolio is a **cinematic, engineered technology showcase** designed to represent a senior software engineer, technical architect, and AI systems builder.
 
 Where typical developer websites default to static cards or template themes, `maywebeissa` integrates:
+
 - **RTL-First Arabic Editorial Typography** paired with technical Latin elements.
 - **Controlled Dark Materiality** with high-contrast, non-glaring surface hierarchy.
 - **Cinematic Canvas Frame Sequences** seamlessly locked to scroll interaction.
@@ -33,12 +35,14 @@ Where typical developer websites default to static cards or template themes, `ma
 The brand identity must evoke **engineering authority, visual polish, and technical depth**.
 
 ### Desired Perception:
+
 - **PREMIUM:** High visual density without clutter; meticulous alignment, typography, and spacing.
 - **TECHNICAL:** Real architecture, authentic code structures, and explicit engineering metaphors.
 - **CINEMATIC:** Immersive visual framing, controlled depth of field, and fluid scroll narrative.
 - **CONFIDENT & MODEST:** Clear presentation of capabilities, metrics, and case studies without noisy hyperbole.
 
 ### Prohibited Aesthetic Tropes:
+
 - ❌ Generic developer portfolio (plain white/gray grid of cards).
 - ❌ SaaS landing page template (purple gradients, generic illustration blobs).
 - ❌ Neon cyberpunk / retro-synthwave cliché (over-saturated cyan/magenta glows).
@@ -52,12 +56,12 @@ The brand identity must evoke **engineering authority, visual polish, and techni
 
 The reference video was analyzed exclusively as an **INTERACTION MECHANISM BASELINE**, not a visual style guide.
 
-| Mechanism Retained | Visual Identity Replaced |
-|-------------------|--------------------------|
-| Central pinned display composition | Replaced reference device with customized engineered display framing |
-| Scroll scrub controlling scene evolution | Replaced reference graphics with programming, project & AI art direction |
-| Staged section transitions | Replaced reference colors and typography with curated Arabic-first palette |
-| Semantic DOM coexisting with canvas | Replaced reference brand identity with senior technology leader presentation |
+| Mechanism Retained                       | Visual Identity Replaced                                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------- |
+| Central pinned display composition       | Replaced reference device with customized engineered display framing         |
+| Scroll scrub controlling scene evolution | Replaced reference graphics with programming, project & AI art direction     |
+| Staged section transitions               | Replaced reference colors and typography with curated Arabic-first palette   |
+| Semantic DOM coexisting with canvas      | Replaced reference brand identity with senior technology leader presentation |
 
 ---
 
@@ -90,9 +94,11 @@ To allow the Owner to select the exact visual character of the platform, three d
 ### DIRECTION A: ENGINEERED CINEMATIC (PRIMARY RECOMMENDATION)
 
 #### Visual Philosophy:
+
 A dark, high-precision visual system inspired by architectural blueprints, darkroom studio lighting, and high-end workstation hardware. It emphasizes structural grids, fine technical borders (1px hairline), and subtle metallic/graphite surfaces with targeted warm-gold and cyan accents.
 
 #### Palette & Materiality:
+
 - **Canvas:** Deep Obsidian `#090A0F`
 - **Surfaces:** Graphite Slate `#12141D`, `#1A1D28`
 - **Text:** Crisp Warm-White `#F4F5F7` (Primary), Muted Silver `#94A3B8` (Secondary)
@@ -100,14 +106,17 @@ A dark, high-precision visual system inspired by architectural blueprints, darkr
 - **Borders:** Hairline Slate `#1E293B` (0.5px - 1px)
 
 #### Accent Hierarchy Policy:
+
 Cyan (`#0EA5E9`) is the primary engineering and system accent. Amber/Solar Gold (`#F59E0B`) is strictly a secondary, selective highlight reserved for AI workflows and key status badges. Amber must NOT compete equally with Cyan across the UI to avoid a generic blue/gold template appearance.
 
 #### Typography Character:
-- **Arabic:** Kufic-inspired geometric precision with editorial warmth (e.g. *IBM Plex Sans Arabic* or *Tajawal*).
-- **Latin:** Clean technical sans-serif (*Inter* / *Outfit*).
-- **Monospace:** Crisp code font (*JetBrains Mono* / *Fira Code*).
+
+- **Arabic:** Kufic-inspired geometric precision with editorial warmth (e.g. _IBM Plex Sans Arabic_ or _Tajawal_).
+- **Latin:** Clean technical sans-serif (_Inter_ / _Outfit_).
+- **Monospace:** Crisp code font (_JetBrains Mono_ / _Fira Code_).
 
 #### Frame & Device Treatment:
+
 - Custom 16:9 obsidian framed display with subtle 1px border glow and dark chamfered bevels. Floating on subtle technical grid lines (`rgba(255,255,255,0.03)`).
 
 ---
@@ -115,9 +124,11 @@ Cyan (`#0EA5E9`) is the primary engineering and system accent. Amber/Solar Gold 
 ### DIRECTION B: LUXURY TECHNOLOGY EDITORIAL
 
 #### Visual Philosophy:
+
 An ultra-refined, high-contrast editorial system drawing inspiration from luxury architectural monographs and high-end hardware editorial publications. Focuses on dramatic typography scale, generous negative space, pure dark obsidian backdrop, and champagne-silver accent details.
 
 #### Palette & Materiality:
+
 - **Canvas:** Pure OLED Black `#050505`
 - **Surfaces:** Matte Charcoal `#0F0F10`, Liquid Platinum `#1C1C1E`
 - **Text:** Stark Pure White `#FFFFFF` (Primary), Champagne Muted `#A1A1AA` (Secondary)
@@ -125,11 +136,13 @@ An ultra-refined, high-contrast editorial system drawing inspiration from luxury
 - **Borders:** Ultra-subtle `#27272A`
 
 #### Typography Character:
-- **Arabic:** High-contrast Naskh/Editorial typeface (e.g. *Noto Serif Arabic* / *Amiri* for display titles).
-- **Latin:** High-fashion geometric sans (*Plus Jakarta Sans* / *Space Grotesk*).
-- **Monospace:** Minimalist mono (*Geist Mono*).
+
+- **Arabic:** High-contrast Naskh/Editorial typeface (e.g. _Noto Serif Arabic_ / _Amiri_ for display titles).
+- **Latin:** High-fashion geometric sans (_Plus Jakarta Sans_ / _Space Grotesk_).
+- **Monospace:** Minimalist mono (_Geist Mono_).
 
 #### Frame & Device Treatment:
+
 - Frameless floating display surface with soft ambient light falloff behind the canvas. Zero visible bezels; floating seamlessly over pure black.
 
 ---
@@ -137,9 +150,11 @@ An ultra-refined, high-contrast editorial system drawing inspiration from luxury
 ### DIRECTION C: FUTURE SYSTEMS / AI LAB
 
 #### Visual Philosophy:
+
 An immersive, data-dense technical environment inspired by advanced AI research labs, telemetry consoles, and system architecture diagnostics. It utilizes deep midnight-blue backdrops, active pipeline nodes, micro-grid markers, and subtle luminescent indicators.
 
 #### Palette & Materiality:
+
 - **Canvas:** Midnight Void `#030712`
 - **Surfaces:** Dark Navy `#0F172A`, Cobalt Layer `#1E293B`
 - **Text:** Cool White `#F8FAFC` (Primary), Ice Slate `#64748B` (Secondary)
@@ -147,11 +162,13 @@ An immersive, data-dense technical environment inspired by advanced AI research 
 - **Borders:** Translucent Cyan `#0891B2` (1px 15% opacity)
 
 #### Typography Character:
-- **Arabic:** Modern technical Naskh (e.g. *Readex Pro* / *Almarai*).
-- **Latin:** Technical mono/sans hybrid (*Space Grotesk* / *Inter*).
-- **Monospace:** *JetBrains Mono* with active line highlighting.
+
+- **Arabic:** Modern technical Naskh (e.g. _Readex Pro_ / _Almarai_).
+- **Latin:** Technical mono/sans hybrid (_Space Grotesk_ / _Inter_).
+- **Monospace:** _JetBrains Mono_ with active line highlighting.
 
 #### Frame & Device Treatment:
+
 - Technical telemetry frame featuring corner bracket marks (`[ ]`), coordinate ticks, and status indicators around the canvas.
 
 ---
@@ -175,6 +192,7 @@ An immersive, data-dense technical environment inspired by advanced AI research 
 ### Selection: **DIRECTION A — ENGINEERED CINEMATIC** (with Editorial Restraint from B & Controlled AI Visuals from C)
 
 #### Rationale for Recommendation:
+
 1. **Perfect Balance of Tech & Luxury:** It conveys engineering discipline without looking like a generic dark dashboard or an over-stylized cyberpunk site.
 2. **Arabic RTL Harmony:** Geometric Kufic-inspired typography (like IBM Plex Sans Arabic) bridges technical precision and Arabic calligraphic structure naturally.
 3. **Optimal Frame Sequence Backdrop:** The obsidian/graphite palette provides an ideal neutral background for rendering Canvas frame sequences without distracting color clashes.
@@ -187,7 +205,7 @@ An immersive, data-dense technical environment inspired by advanced AI research 
 The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative matching `docs/ui/UI-MOTION-SPEC-001.md`:
 
 ```
-[H0: IDENTITY] → [H1: DEVICE REVEAL] → [H2: PIN ENGAGE] → [H3: CODE ENGINE] 
+[H0: IDENTITY] → [H1: DEVICE REVEAL] → [H2: PIN ENGAGE] → [H3: CODE ENGINE]
       ↓
 [H4: PROJECTS] → [H5: TECH PIPELINE] → [H6: AI WORKFLOW] → [H7: RELEASE] → [H8: EXIT]
 ```
@@ -196,7 +214,7 @@ The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative 
 
 - **H0 — Identity & Atmosphere (0% - 10% scroll):**
   - Dark obsidian canvas. Name and title in high-contrast Arabic typography fade in.
-  - Subtitle: *مهندس أنظمة برمجة وذكاء اصطناعي* (Software Systems & AI Engineer).
+  - Subtitle: _مهندس أنظمة برمجة وذكاء اصطناعي_ (Software Systems & AI Engineer).
 
 - **H1 — Display Emergence (10% - 20% scroll):**
   - Central display frame scales smoothly into view (0.9 → 1.0) with subtle depth.
@@ -208,7 +226,7 @@ The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative 
 
 - **H3 — Programming & Engineering Sequence (25% - 40% scroll):**
   - Canvas sequence displays high-resolution code architecture evolution.
-  - Real DOM Text Overlay: *"معمارية البرمجيات والأنظمة"* (Software Architecture & Systems).
+  - Real DOM Text Overlay: _"معمارية البرمجيات والأنظمة"_ (Software Architecture & Systems).
 
 - **H4 — Product & Project Showcase (40% - 55% scroll):**
   - Canvas transitions into real product interface views.
@@ -220,7 +238,7 @@ The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative 
 
 - **H6 — AI Workflow & Automation (70% - 85% scroll):**
   - Canvas displays AI agent automation flows (Prompt → Pipeline → Output).
-  - Real DOM Text: *"تكامل الذكاء الاصطناعي والأتمتة"* (AI Integration & Automation).
+  - Real DOM Text: _"تكامل الذكاء الاصطناعي والأتمتة"_ (AI Integration & Automation).
 
 - **H7 — Consolidation & Scale-Down (85% - 95% scroll):**
   - Frame sequence completes. Display frame scales down smoothly.
@@ -234,6 +252,7 @@ The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative 
 ## 9. DISPLAY ANCHOR STRATEGY
 
 ### Recommended Display Style: **Hybrid Engineered Display Frame**
+
 - **Desktop:** A sleek 16:9 floating viewport with thin graphite chamfered edges, dark glass tint, and subtle 1px ambient border stroke (`rgba(255,255,255,0.08)`).
 - **Mobile:** A 19.5:9 portrait screen enclosure tailored to smartphone aspect ratios.
 - **Why Not 3D WebGL Device?** WebGL models add 2–5MB of 3D geometry payloads and GPU shading overhead. The 2D Canvas frame sequence with CSS material borders delivers 100% of the visual depth at a fraction of the performance cost. Real-time 3D (WebGL/Three.js) is deferred and non-mandatory.
@@ -243,24 +262,28 @@ The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative 
 ## 10. DOMAIN VISUAL LANGUAGES
 
 ### 1. Programming Visual Language:
+
 - **Concept:** Code as architecture, not messy screenshots.
 - **Presentation:** High-contrast editor layout featuring syntax-highlighted code blocks with line numbers, active line indicators, and subtle execution telemetry.
 - **DOM Integration:** Code snippets remain selectable and copyable semantic `<pre><code>` blocks, positioned over decorative canvas frame backgrounds.
 
 ### 2. Projects Visual Language:
+
 - **Concept:** Real products, verified outcomes.
 - **Presentation:** Product interfaces presented inside clean browser viewports with live status indicators ("PRODUCTION", "STAGING").
 - **Metadata Layout:** Project title (`<h2>`), category badge, key metrics (e.g. "99.9% Uptime", "10x Throughput"), and direct links.
 
 ### 3. Technology Visual Language:
+
 - **Concept:** Architectural pipeline rather than a static logo wall.
 - **Presentation:** Categorized interactive layers:
-  - *Languages & Runtime:* TypeScript, Python, Node.js, Go.
-  - *Frontend & UI:* Next.js, React, Tailwind CSS, GSAP.
-  - *Data & Backend:* PostgreSQL, Drizzle ORM, Redis, Docker.
-  - *AI & Agents:* Gemini API, PyTorch, LangChain, Custom Workflows.
+  - _Languages & Runtime:_ TypeScript, Python, Node.js, Go.
+  - _Frontend & UI:_ Next.js, React, Tailwind CSS, GSAP.
+  - _Data & Backend:_ PostgreSQL, Drizzle ORM, Redis, Docker.
+  - _AI & Agents:_ Gemini API, PyTorch, LangChain, Custom Workflows.
 
 ### 4. AI Workflow Visual Language:
+
 - **Concept:** Demystifying AI through structured pipeline visual narratives:
   `Idea / Prompt` → `Agent Execution` → `Code Generation` → `Automated Deployment`.
 
@@ -295,10 +318,12 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 ```
 
 #### Candidate Selection Rationale:
+
 - **IBM Plex Sans Arabic:** Engineered, crisp, highly readable at large scale, matching technical architecture themes.
 - **Inter / Outfit:** Exceptionally legible UI fonts with variable font support.
 
 #### Font Performance & Loading Strategy:
+
 1. **Candidate Alternatives:** The listed font families represent candidate options for evaluation; they do NOT constitute an instruction to download all candidate fonts simultaneously.
 2. **Single Primary Pair:** Only the final approved font combination will be loaded in production (e.g. 1 primary Arabic family, 1 primary Latin family if separate Latin loading is justified, and 1 monospace family).
 3. **Font Subsetting & Variable Fonts:** Use framework font optimization (`next/font`), preloading only critical above-the-fold display subsets and minimizing font weight variations.
@@ -312,32 +337,32 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 /* DESIGN TOKENS (PROPOSAL ONLY — UNIMPLEMENTED) */
 :root {
   /* Canvas & Backgrounds */
-  --bg-canvas: #090A0F;
-  --bg-surface-base: #12141D;
-  --bg-surface-elevated: #1A1D28;
+  --bg-canvas: #090a0f;
+  --bg-surface-base: #12141d;
+  --bg-surface-elevated: #1a1d28;
   --bg-surface-overlay: rgba(18, 20, 29, 0.85);
 
   /* Primary Typography */
-  --text-primary: #F4F5F7;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-inverse: #090A0F;
+  --text-primary: #f4f5f7;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #090a0f;
 
   /* Engineering & System Accents */
-  --accent-tech: #0EA5E9;       /* Cyan (Primary Technical Accent) */
+  --accent-tech: #0ea5e9; /* Cyan (Primary Technical Accent) */
   --accent-tech-glow: rgba(14, 165, 233, 0.15);
-  --accent-ai: #F59E0B;         /* Solar Gold (Secondary Selective AI Accent) */
+  --accent-ai: #f59e0b; /* Solar Gold (Secondary Selective AI Accent) */
   --accent-ai-glow: rgba(245, 158, 11, 0.15);
 
   /* Borders & Dividers */
-  --border-subtle: #1E293B;
+  --border-subtle: #1e293b;
   --border-medium: #334155;
-  --border-focus: #0EA5E9;
+  --border-focus: #0ea5e9;
 
   /* Feedback States */
-  --status-success: #10B981;
-  --status-warning: #F59E0B;
-  --status-error: #EF4444;
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
 }
 ```
 
@@ -346,12 +371,14 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 ## 14. EFFECTS & MATERIALITY POLICY
 
 ### Allowed Visual Effects:
+
 - ✅ Hairline 1px borders with subtle linear gradients.
 - ✅ Soft radial glow highlights (`blur(40px)`, max opacity `0.12`).
 - ✅ Subtle dark noise textures (`3%` opacity) for surface depth.
 - ✅ Micro hover transforms (`scale(1.02)`, `translateY(-2px)`).
 
 ### Forbidden Visual Effects:
+
 - ❌ Heavy Gaussian blur on every card (`backdrop-filter: blur(20px)` everywhere destroys mobile scroll performance).
 - ❌ Persistent neon glow on non-interactive text.
 - ❌ Random particle background scripts.
@@ -368,9 +395,7 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
   ```html
   <div dir="rtl">
     <h2>معمارية النظام</h2>
-    <div dir="ltr" class="font-mono">
-      const pipeline = new AIPipeline();
-    </div>
+    <div dir="ltr" class="font-mono">const pipeline = new AIPipeline();</div>
   </div>
   ```
 
@@ -393,6 +418,7 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 ## 17. DESIGN SYSTEM & COMPONENT STRATEGY
 
 ### Preferred Component Approach:
+
 - **Primitives:** Use **Radix UI / shadcn primitives** strictly for accessible behavior (Dialog, Dropdown, Accordion, Tooltip).
 - **Styling:** **100% Custom Visual Styling** using our design tokens. **NO default generic shadcn visual themes.**
 
@@ -414,6 +440,7 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 ```
 
 ### Source Video FPS vs Web Frame-Sequence Density:
+
 1. **Source Video Authoring Rate:** Cinematic temporal rates (e.g. 24fps) may be used as an offline source-video production and export guideline.
 2. **Web Frame Density:** Source 24fps does NOT mean 24 web frames per second must be extracted or that every video frame becomes a web asset. Web frame extraction remains **adaptive, sequence-specific, visual-change-driven, and governed strictly by `docs/ui/UI-MOTION-SPEC-001.md`**.
 3. **Performance Governance:** Web extraction selects only the minimal frame density necessary to preserve convincing scrub continuity within approved memory (`BoundedFrameCache`) and network budgets.
@@ -422,12 +449,12 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 
 ## 19. PERFORMANCE COST MATRIX
 
-| Visual Feature | Cost Rating | Mitigation / Constraint |
-|----------------|-------------|-------------------------|
-| CSS Color Tokens & Gradients | **LOW** | Instant execution |
-| WebP Frame Sequences (Staged) | **MEDIUM** | Bounded cache window, `ImageBitmap.close()` |
-| Backdrop Blur Panels | **HIGH** | Restrict to fixed navbar; forbid on scrolling cards |
-| Live Canvas Render Loop | **MEDIUM** | Render only on frame change in RAF |
+| Visual Feature                | Cost Rating | Mitigation / Constraint                             |
+| ----------------------------- | ----------- | --------------------------------------------------- |
+| CSS Color Tokens & Gradients  | **LOW**     | Instant execution                                   |
+| WebP Frame Sequences (Staged) | **MEDIUM**  | Bounded cache window, `ImageBitmap.close()`         |
+| Backdrop Blur Panels          | **HIGH**    | Restrict to fixed navbar; forbid on scrolling cards |
+| Live Canvas Render Loop       | **MEDIUM**  | Render only on frame change in RAF                  |
 
 ---
 
@@ -459,6 +486,7 @@ The following key decisions are presented for Owner / COO selection:
 ## 23. NEXT RECOMMENDED PHASE
 
 Upon Owner approval of this Visual Direction:
+
 - **Recommended Next Phase:** **`UI-HERO-VISUAL-PROTOTYPE-001`** (Creating a high-fidelity visual prototype of the central Hero island to visually validate the design direction before freezing the full Design System tokens in `UI-DESIGN-SYSTEM-001`).
 
 ---
