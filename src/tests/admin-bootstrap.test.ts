@@ -9,6 +9,8 @@ const dbName = process.env.DB_NAME || 'portfolio_test';
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`;
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { db } from '../db';
@@ -16,6 +18,32 @@ import { user, session, account, verification } from '../db/schema';
 import { getAuth, resetAuthInstance, validateAdminSession } from '../modules/auth';
 import { bootstrapAdmin } from '../modules/auth/infrastructure/admin-bootstrap-composition';
 import { assertTestDatabaseSafety } from './utils/db-safety-guard';
+
+async function ensureSchemaInitialized() {
+  const tableCheck = await db.execute(
+    sql`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user');`
+  );
+  const exists = (tableCheck[0] as { exists?: boolean })?.exists;
+  if (!exists) {
+    const drizzleDir = path.join(process.cwd(), 'drizzle');
+    const sqlFiles = fs
+      .readdirSync(drizzleDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of sqlFiles) {
+      const migrationSql = fs.readFileSync(path.join(drizzleDir, file), 'utf-8');
+      const statements = migrationSql
+        .split('--> statement-breakpoint')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      for (const stmt of statements) {
+        await db.execute(sql.raw(stmt));
+      }
+    }
+  }
+}
 
 async function resetDbTables() {
   await db.execute(sql`ALTER TABLE audit_logs DISABLE TRIGGER ALL;`);
@@ -41,6 +69,7 @@ describe('ADMIN-BOOTSTRAP-001 — Single Admin Bootstrap & Real Credential/Sessi
       allowDestructiveOptIn: process.env.ALLOW_DESTRUCTIVE_DB_TESTS,
     });
 
+    await ensureSchemaInitialized();
     // Clean tables before starting bootstrap suite
     await resetDbTables();
     resetAuthInstance();
