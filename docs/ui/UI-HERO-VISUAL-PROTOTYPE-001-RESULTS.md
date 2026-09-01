@@ -33,6 +33,7 @@ This task delivers a dedicated, isolated high-fidelity visual prototype for the 
 - **Primary Direction:** Direction A — Engineered Cinematic (Supported by editorial restraint from Direction B and controlled AI workflow language from Direction C).
 - **Accent Color Ratio:** Cyan (`#0EA5E9`) is the dominant technical accent language across all general stages; Amber (`#F59E0B`) is selectively applied only at stage H6 (AI Workflow).
 - **Hero Display Frame:** Hybrid Engineered Display with 16:9 viewport ratio, graphite chamfered border, ambient light ring, and responsive mobile re-composition.
+- **Content Integrity (H4):** Project cards feature prototype-neutral labels (`DEMO_SURFACE`, `SYSTEM_ARCH`) with zero unsupported production deployment claims.
 - **RTL / BIDI:** Arabic primary layout (`dir="rtl" lang="ar"`) with localized LTR islands (`dir="ltr"`) for TypeScript code snippets and technical identifiers.
 - **Accessibility & Reduced Motion:** Full `prefers-reduced-motion: reduce` support disabling pin scrubbing while keeping semantic text fully readable.
 

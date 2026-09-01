@@ -264,7 +264,7 @@ export function HeroVisualPrototype() {
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-slate-300 font-bold">منظومة إدارة المخزون</span>
                       <span className="text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
-                        PRODUCTION
+                        DEMO_SURFACE
                       </span>
                     </div>
                     <p className="text-xs text-slate-400">
@@ -275,7 +275,7 @@ export function HeroVisualPrototype() {
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-slate-300 font-bold">منصة التحليل والتكامل</span>
                       <span className="text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">
-                        STAGING
+                        SYSTEM_ARCH
                       </span>
                     </div>
                     <p className="text-xs text-slate-400">
