@@ -1,4 +1,4 @@
-import { getAuth } from './auth-runtime';
+import { getAuth } from '../infrastructure/auth-runtime';
 
 export type AuthSessionStatus = 'UNAUTHENTICATED' | 'FORBIDDEN' | 'AUTHORIZED';
 

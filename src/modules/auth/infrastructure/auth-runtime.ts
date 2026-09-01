@@ -1,7 +1,7 @@
 import { betterAuth, BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db } from '../../db';
-import { user, session, account, verification } from '../../db/schema';
+import { db } from '../../../db';
+import { user, session, account, verification } from '../../../db/schema';
 
 export function createAuthInstance() {
   const secret = process.env.BETTER_AUTH_SECRET;
@@ -12,7 +12,18 @@ export function createAuthInstance() {
     throw new Error('FATAL: BETTER_AUTH_SECRET must be at least 32 characters long.');
   }
 
-  const baseURL = process.env.BETTER_AUTH_URL || 'http://localhost:3000';
+  const baseURL = process.env.BETTER_AUTH_URL;
+  if (!baseURL) {
+    throw new Error('FATAL: BETTER_AUTH_URL environment variable is required.');
+  }
+  try {
+    const parsed = new URL(baseURL);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Invalid protocol');
+    }
+  } catch {
+    throw new Error('FATAL: BETTER_AUTH_URL must be a valid absolute http or https URL.');
+  }
 
   const options: BetterAuthOptions = {
     secret,
@@ -46,6 +57,9 @@ export function createAuthInstance() {
     session: {
       expiresIn: 86400,
       updateAge: 21600,
+      cookieCache: {
+        enabled: false,
+      },
     },
   };
 

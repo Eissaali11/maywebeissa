@@ -10,14 +10,14 @@ const dbPort = process.env.DB_PORT || '5432';
 const dbName = process.env.DB_NAME || 'portfolio_test_db';
 const defaultDbUrl = `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`;
 
-let getAuth: typeof import('../lib/auth').getAuth;
-let createAuthInstance: typeof import('../lib/auth').createAuthInstance;
-let resetAuthInstance: typeof import('../lib/auth').resetAuthInstance;
-let validateAdminSession: typeof import('../lib/auth').validateAdminSession;
+let getAuth: typeof import('../modules/auth').getAuth;
+let createAuthInstance: typeof import('../modules/auth').createAuthInstance;
+let resetAuthInstance: typeof import('../modules/auth').resetAuthInstance;
+let validateAdminSession: typeof import('../modules/auth').validateAdminSession;
 let GET: typeof import('../app/api/auth/[...all]/route').GET;
 let POST: typeof import('../app/api/auth/[...all]/route').POST;
 
-describe('Auth Runtime Foundation Suite (AUTH-001 to AUTH-010)', () => {
+describe('Auth Runtime Foundation Suite (AUTH-001 to AUTH-013)', () => {
   const originalEnv = process.env;
 
   beforeAll(async () => {
@@ -25,7 +25,7 @@ describe('Auth Runtime Foundation Suite (AUTH-001 to AUTH-010)', () => {
     process.env.BETTER_AUTH_SECRET = VALID_TEST_SECRET;
     process.env.BETTER_AUTH_URL = VALID_TEST_URL;
 
-    const authModule = await import('../lib/auth');
+    const authModule = await import('../modules/auth');
     getAuth = authModule.getAuth;
     createAuthInstance = authModule.createAuthInstance;
     resetAuthInstance = authModule.resetAuthInstance;
@@ -160,8 +160,43 @@ describe('Auth Runtime Foundation Suite (AUTH-001 to AUTH-010)', () => {
     const auth = getAuth();
     const roleConfig = auth.options.user?.additionalFields?.role;
     expect(roleConfig).toBeDefined();
+    expect(roleConfig?.type).toBe('string');
     expect(roleConfig?.input).toBe(false);
+    expect(roleConfig?.returned).toBe(true);
     expect(roleConfig?.defaultValue).toBe('ADMIN');
     expect(roleConfig?.required).toBe(true);
+  });
+
+  it('AUTH-011: Session lifetime policy is exactly 24h / refresh age 6h and cookie cache is disabled', () => {
+    const auth = getAuth();
+    expect(auth.options.session?.expiresIn).toBe(86400);
+    expect(auth.options.session?.updateAge).toBe(21600);
+    expect(auth.options.session?.cookieCache?.enabled).toBe(false);
+  });
+
+  it('AUTH-012: BETTER_AUTH_URL is mandatory and invalid/missing URL fails closed', () => {
+    delete process.env.BETTER_AUTH_URL;
+    resetAuthInstance();
+    expect(() => createAuthInstance()).toThrow(
+      /FATAL: BETTER_AUTH_URL environment variable is required/
+    );
+
+    process.env.BETTER_AUTH_URL = 'not-a-valid-url';
+    resetAuthInstance();
+    expect(() => createAuthInstance()).toThrow(
+      /FATAL: BETTER_AUTH_URL must be a valid absolute http or https URL/
+    );
+
+    process.env.BETTER_AUTH_URL = 'ftp://invalid-protocol.com';
+    resetAuthInstance();
+    expect(() => createAuthInstance()).toThrow(
+      /FATAL: BETTER_AUTH_URL must be a valid absolute http or https URL/
+    );
+  });
+
+  it('AUTH-013: Password policy is exactly min 12 / max 128', () => {
+    const auth = getAuth();
+    expect(auth.options.emailAndPassword?.minPasswordLength).toBe(12);
+    expect(auth.options.emailAndPassword?.maxPasswordLength).toBe(128);
   });
 });
