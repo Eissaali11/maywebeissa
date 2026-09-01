@@ -59,6 +59,17 @@ jobs:
       - name: Safety Guard & Smoke Tests
         run: npm run test -- src/tests/db-safety-guard.test.ts src/tests/smoke.test.ts
 
+      - name: Auth Runtime Tests
+        env:
+          BETTER_AUTH_SECRET: 'ephemeral-ci-test-secret-at-least-32-chars-long-123456'
+          BETTER_AUTH_URL: 'http://localhost:3000'
+          DB_USER: postgres
+          DB_PASS: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: portfolio_test_db
+        run: npm run test:auth
+
       - name: Real PostgreSQL 16 Integration & Security Tests
         env:
           DB_USER: postgres
@@ -88,6 +99,9 @@ jobs:
         run: npm run db:check
 
       - name: Production Build Verification
+        env:
+          BETTER_AUTH_SECRET: 'ephemeral-ci-test-secret-at-least-32-chars-long-123456'
+          BETTER_AUTH_URL: 'http://localhost:3000'
         run: npm run build
 
       - name: Secret Scan Verification
