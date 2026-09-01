@@ -12,7 +12,7 @@
 ---
 
 > [!IMPORTANT]
-> **GOVERNANCE CONSTRAINT:** This document defines the **Visual Strategy, Design System Architecture, Color/Typography Direction, and Art Direction Rules** for the portfolio platform. **ZERO APPLICATION SOURCE CODE, STYLES, OR FRAME ASSETS ARE MODIFIED IN THIS TASK.** Implementation is strictly forbidden until the Owner / COO reviews the 3 proposed directions and selects the preferred visual path.
+> **GOVERNANCE CONSTRAINT:** This document defines the **Visual Strategy, Design System Architecture, Color/Typography Direction, and Art Direction Rules** for the portfolio platform. **ZERO APPLICATION SOURCE CODE, STYLES, OR FRAME ASSETS ARE MODIFIED IN THIS TASK.** Implementation is strictly forbidden until the Owner / COO reviews the proposed directions and selects the preferred visual path.
 
 ---
 
@@ -67,7 +67,7 @@ The reference video was analyzed exclusively as an **INTERACTION MECHANISM BASEL
 2. **RTL-First Symmetry:** The visual grid, typography hierarchy, and reading flow are built natively for Arabic, with LTR islands for code and technical terms.
 3. **Engineered Materiality:** Surfaces possess weight, tactile borders, and micro-texture rather than flat plastic color blocks.
 4. **Cinematic Continuity:** Frame sequences evolve smoothly across keyframes without jarring cuts or uncoordinated color jumps.
-5. **Accessibility as Elegance:** High contrast ratios (WCAG AAA/AA) and crisp focus states enhance visual luxury rather than compromising it.
+5. **Accessibility as Elegance:** Contrast ratios and crisp focus states enhance visual luxury rather than compromising it. Contrast compliance is verified role-by-role during Design System implementation.
 
 ---
 
@@ -96,8 +96,11 @@ A dark, high-precision visual system inspired by architectural blueprints, darkr
 - **Canvas:** Deep Obsidian `#090A0F`
 - **Surfaces:** Graphite Slate `#12141D`, `#1A1D28`
 - **Text:** Crisp Warm-White `#F4F5F7` (Primary), Muted Silver `#94A3B8` (Secondary)
-- **Accents:** Amber Cyan `#0EA5E9` (Engineering), Solar Gold `#F59E0B` (AI/Highlights)
+- **Accents:** Cyan `#0EA5E9` (Primary Technical Accent), Solar Gold `#F59E0B` (Secondary / Selective AI Accent)
 - **Borders:** Hairline Slate `#1E293B` (0.5px - 1px)
+
+#### Accent Hierarchy Policy:
+Cyan (`#0EA5E9`) is the primary engineering and system accent. Amber/Solar Gold (`#F59E0B`) is strictly a secondary, selective highlight reserved for AI workflows and key status badges. Amber must NOT compete equally with Cyan across the UI to avoid a generic blue/gold template appearance.
 
 #### Typography Character:
 - **Arabic:** Kufic-inspired geometric precision with editorial warmth (e.g. *IBM Plex Sans Arabic* or *Tajawal*).
@@ -169,7 +172,7 @@ An immersive, data-dense technical environment inspired by advanced AI research 
 
 ## 7. RECOMMENDED DIRECTION & RATIONALE
 
-### Selection: **DIRECTION A — ENGINEERED CINEMATIC**
+### Selection: **DIRECTION A — ENGINEERED CINEMATIC** (with Editorial Restraint from B & Controlled AI Visuals from C)
 
 #### Rationale for Recommendation:
 1. **Perfect Balance of Tech & Luxury:** It conveys engineering discipline without looking like a generic dark dashboard or an over-stylized cyberpunk site.
@@ -181,7 +184,7 @@ An immersive, data-dense technical environment inspired by advanced AI research 
 
 ## 8. HERO ART DIRECTION & CONCEPTUAL STORYBOARD
 
-The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative:
+The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative matching `docs/ui/UI-MOTION-SPEC-001.md`:
 
 ```
 [H0: IDENTITY] → [H1: DEVICE REVEAL] → [H2: PIN ENGAGE] → [H3: CODE ENGINE] 
@@ -230,10 +233,10 @@ The Hero section functions as a 9-state (H0 through H8) pinned scroll narrative:
 
 ## 9. DISPLAY ANCHOR STRATEGY
 
-### Selected Display Style: **Hybrid Engineered Display Frame**
+### Recommended Display Style: **Hybrid Engineered Display Frame**
 - **Desktop:** A sleek 16:9 floating viewport with thin graphite chamfered edges, dark glass tint, and subtle 1px ambient border stroke (`rgba(255,255,255,0.08)`).
 - **Mobile:** A 19.5:9 portrait screen enclosure tailored to smartphone aspect ratios.
-- **Why Not 3D WebGL Device?** WebGL models add 2–5MB of 3D geometry payloads and GPU shading overhead. The 2D Canvas frame sequence with CSS material borders delivers 100% of the visual depth at a fraction of the performance cost.
+- **Why Not 3D WebGL Device?** WebGL models add 2–5MB of 3D geometry payloads and GPU shading overhead. The 2D Canvas frame sequence with CSS material borders delivers 100% of the visual depth at a fraction of the performance cost. Real-time 3D (WebGL/Three.js) is deferred and non-mandatory.
 
 ---
 
@@ -269,21 +272,21 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 
 1. **Aspect Ratio:** 16:9 (Desktop - 1920×1080), 9:16 or 390×844 (Mobile).
 2. **Camera Motion:** Slow, steady linear dolly or tracking shots. **NO chaotic camera spins, whip-pans, or sudden zoom cuts.**
-3. **Object & Palette Continuity:** Consistent color temperature (6000K cool tech lighting with warm amber accents) across all generated frames.
-4. **Scrub Suitability:** Visual changes must be continuous and reversible; scenes must look coherent when scrubbed backward.
-5. **No Baked-in Text:** AI video generators MUST NOT bake text or logos into images. All typography is rendered by semantic DOM elements over the canvas.
+3. **Lighting & Material Continuity:** Intra-sequence visual continuity (consistent key-light direction, white balance, material response, and stable environment lighting). A cool-neutral studio treatment (around 6000K) serves as a starting reference for Direction A, but future scenes may use another controlled color temperature when creatively justified.
+4. **Scrub Suitability:** Visual changes must be continuous, predictable, and reversible; scenes must look coherent when scrubbed backward across arbitrary frames.
+5. **No Baked-in Text:** AI video generators MUST NOT bake critical text or logos into images. All typography is rendered by semantic DOM elements over the canvas.
 
 ---
 
-## 12. TYPOGRAPHY DIRECTION
+## 12. TYPOGRAPHY DIRECTION & PERFORMANCE STRATEGY
 
 ### Primary Language: Arabic (RTL) | Secondary Language: English (LTR)
 
 ```
 +-----------------------------------------------------------------------------------+
-| TYPOGRAPHY PAIRING RECOMMENDATIONS                                                |
+| TYPOGRAPHY CANDIDATES (ALTERNATIVES — NOT ALL LOADED SIMULTANEOUSLY)              |
 +---------------------+-------------------------------+-----------------------------+
-| ROLE                | ARABIC CANDIDATE              | LATIN CANDIDATE             |
+| ROLE                | ARABIC CANDIDATES             | LATIN CANDIDATE OPTIONS     |
 +---------------------+-------------------------------+-----------------------------+
 | Display Headings    | IBM Plex Sans Arabic (Bold)   | Outfit / Inter (Bold)       |
 | Body Text           | Tajawal / Readex Pro          | Inter / Plus Jakarta Sans   |
@@ -291,9 +294,15 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 +---------------------+-------------------------------+-----------------------------+
 ```
 
-#### Selection Rationale:
+#### Candidate Selection Rationale:
 - **IBM Plex Sans Arabic:** Engineered, crisp, highly readable at large scale, matching technical architecture themes.
-- **Inter / Outfit:** Exceptionally legible UI fonts with variable font support (`font-weight: 100..900`).
+- **Inter / Outfit:** Exceptionally legible UI fonts with variable font support.
+
+#### Font Performance & Loading Strategy:
+1. **Candidate Alternatives:** The listed font families represent candidate options for evaluation; they do NOT constitute an instruction to download all candidate fonts simultaneously.
+2. **Single Primary Pair:** Only the final approved font combination will be loaded in production (e.g. 1 primary Arabic family, 1 primary Latin family if separate Latin loading is justified, and 1 monospace family).
+3. **Font Subsetting & Variable Fonts:** Use framework font optimization (`next/font`), preloading only critical above-the-fold display subsets and minimizing font weight variations.
+4. **Latin Fallback Evaluation:** During prototype testing, evaluate whether the primary Arabic variable font (e.g., IBM Plex Sans Arabic) provides adequate Latin character coverage before adding an independent Latin font file.
 
 ---
 
@@ -314,10 +323,10 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
   --text-muted: #64748B;
   --text-inverse: #090A0F;
 
-  /* Engineering Accents */
-  --accent-tech: #0EA5E9;       /* Cyan */
+  /* Engineering & System Accents */
+  --accent-tech: #0EA5E9;       /* Cyan (Primary Technical Accent) */
   --accent-tech-glow: rgba(14, 165, 233, 0.15);
-  --accent-ai: #F59E0B;         /* Gold/Amber */
+  --accent-ai: #F59E0B;         /* Solar Gold (Secondary Selective AI Accent) */
   --accent-ai-glow: rgba(245, 158, 11, 0.15);
 
   /* Borders & Dividers */
@@ -369,8 +378,11 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 
 ## 16. ACCESSIBILITY & REDUCED MOTION VISUAL STRATEGY
 
-1. **Contrast Compliance:** All primary text achieves **WCAG AAA** (≥ 7:1 contrast ratio against background).
-2. **Focus Visibility:** High-contrast 2px cyan focus ring (`outline: 2px solid var(--border-focus)`) on all keyboard-navigable elements.
+1. **Contrast Compliance Policy:** Accessibility contrast is an implementation requirement evaluated per token pair, not a blanket property of a color palette.
+   - Every foreground/background token role must be validated during Design System implementation.
+   - **WCAG AA** contrast (≥ 4.5:1 for normal text, ≥ 3.0:1 for large text and UI components) is the mandatory baseline.
+   - **WCAG AAA** contrast (≥ 7:1) may be targeted for primary headlines where practical, but is not claimed universally across all tokens prior to token pair verification.
+2. **Focus Visibility:** High-contrast focus indicators (e.g. 2px cyan ring `outline: 2px solid var(--border-focus)`) must remain clearly visible against all supported background surfaces.
 3. **Reduced Motion Fallback (`prefers-reduced-motion: reduce`):**
    - Canvas scroll pin disabled.
    - Representative static visual frame displayed.
@@ -386,7 +398,7 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 
 ---
 
-## 18. MEDIA CLASSIFICATION & ASSET STRATEGY
+## 18. MEDIA CLASSIFICATION & FRAME DENSITY SEMANTICS
 
 ```
 +-----------------------------------------------------------------------------------+
@@ -394,12 +406,17 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 +-------------------------------+-------------------+-------------------------------+
 | ASSET CATEGORY                | FORMAT            | USAGE RULES                   |
 +-------------------------------+-------------------+-------------------------------+
-| Hero Pinned Frame Sequences   | WebP (q:80)       | Scroll scrub canvas only      |
+| Hero Pinned Frame Sequences   | WebP              | Scroll scrub canvas only      |
 | Project Showcase Images       | WebP / AVIF       | Real product screenshots      |
 | Technical Architecture Icons  | Inline SVG        | Resolution-independent vector |
 | Decorative Backgrounds        | Pure CSS Gradient | Zero network image payloads   |
 +-------------------------------+-------------------+-------------------------------+
 ```
+
+### Source Video FPS vs Web Frame-Sequence Density:
+1. **Source Video Authoring Rate:** Cinematic temporal rates (e.g. 24fps) may be used as an offline source-video production and export guideline.
+2. **Web Frame Density:** Source 24fps does NOT mean 24 web frames per second must be extracted or that every video frame becomes a web asset. Web frame extraction remains **adaptive, sequence-specific, visual-change-driven, and governed strictly by `docs/ui/UI-MOTION-SPEC-001.md`**.
+3. **Performance Governance:** Web extraction selects only the minimal frame density necessary to preserve convincing scrub continuity within approved memory (`BoundedFrameCache`) and network budgets.
 
 ---
 
@@ -416,10 +433,10 @@ Future AI-generated visual sequences MUST adhere to strict production constraint
 
 ## 20. RISKS & MITIGATIONS
 
-1. **Risk:** Large WebP frame sequences impacting mobile data budgets.
-   - **Mitigation:** Mobile variant uses reduced frame count (60–90 frames) at 750×1334 resolution with `q:72` compression.
+1. **Risk:** WebP frame sequences impacting mobile data budgets.
+   - **Mitigation:** Mobile variants use adaptively reduced frame counts and lower resolution targets tailored to mobile device viewports, governed by `docs/ui/UI-MOTION-SPEC-001.md`.
 2. **Risk:** Web font loading causing layout shift (CLS).
-   - **Mitigation:** Preload primary fonts with `font-display: swap` and fallback metric overrides.
+   - **Mitigation:** Preload primary font subsets with `font-display: swap` and fallback metric overrides.
 
 ---
 
@@ -433,11 +450,16 @@ The following key decisions are presented for Owner / COO selection:
 
 ---
 
-## 22. NEXT RECOMMENDED PHASE
+## 22. CARRIED TECHNICAL OBSERVATION
+
+- **STALE_ASYNC_VARIANT_TOKEN_HARDENING:** Retained as a non-blocking `OBSERVATION`. This token cache race hardening point from POC testing will be reassessed during production Hero implementation.
+
+---
+
+## 23. NEXT RECOMMENDED PHASE
 
 Upon Owner approval of this Visual Direction:
-- **Phase:** `UI-DESIGN-SYSTEM-001` or `UI-HERO-VISUAL-PROTOTYPE-001`.
-- **Scope:** Creating core visual design tokens in CSS and building the first production-grade visual prototype for the Hero component.
+- **Recommended Next Phase:** **`UI-HERO-VISUAL-PROTOTYPE-001`** (Creating a high-fidelity visual prototype of the central Hero island to visually validate the design direction before freezing the full Design System tokens in `UI-DESIGN-SYSTEM-001`).
 
 ---
 
