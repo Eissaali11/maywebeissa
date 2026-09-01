@@ -119,7 +119,7 @@ function analyzeFileImports(filePath, customContent = null) {
         normalizedFilePath.includes('/presentation/');
 
       if (isPresentationFile) {
-        if (DB_DRIVERS.includes(importSpecifier) || resolvedPath.includes('/src/db/')) {
+        if (DB_DRIVERS.includes(importSpecifier) || resolvedPath.includes('/src/db')) {
           fileViolations.push(
             `Direct DB access '${importSpecifier}' forbidden in presentation layer (${path.relative(process.cwd(), filePath)})`
           );
@@ -128,7 +128,7 @@ function analyzeFileImports(filePath, customContent = null) {
 
       // Rule 2: Database / Schema infrastructure must NOT import presentation code
       const isInfrastructureFile =
-        normalizedFilePath.includes('/src/db/') || normalizedFilePath.includes('/infrastructure/');
+        normalizedFilePath.includes('/src/db') || normalizedFilePath.includes('/infrastructure/');
 
       if (isInfrastructureFile) {
         if (
@@ -158,6 +158,20 @@ function analyzeFileImports(filePath, customContent = null) {
               );
             }
           }
+        }
+      }
+
+      // Rule 4: Domain, Application, and Presentation layers in modules must NOT import DB infrastructure
+      const isNonInfraModuleFile =
+        normalizedFilePath.includes('/domain/') ||
+        normalizedFilePath.includes('/application/') ||
+        normalizedFilePath.includes('/presentation/');
+
+      if (isNonInfraModuleFile) {
+        if (DB_DRIVERS.includes(importSpecifier) || resolvedPath.includes('/src/db')) {
+          fileViolations.push(
+            `Direct DB/ORM infrastructure access '${importSpecifier}' forbidden in domain/application/presentation layer (${path.relative(process.cwd(), filePath)})`
+          );
         }
       }
     }
@@ -296,6 +310,37 @@ function runSelfTest() {
       content: `import { ProjectReference } from '@/modules/projects/domain/interfaces/project-reference';`,
       shouldFail: false,
     },
+    {
+      name: 'Fixture J: Application -> Direct DB import (NEGATIVE)',
+      path: path.join(process.cwd(), 'src', 'modules', 'auth', 'application', 'bad_app_db.ts'),
+      content: `import { db } from '../../../db';`,
+      shouldFail: true,
+    },
+    {
+      name: 'Fixture K: Domain -> Direct DB import (NEGATIVE)',
+      path: path.join(process.cwd(), 'src', 'modules', 'auth', 'domain', 'bad_dom_db.ts'),
+      content: `import { user } from '../../../db/schema';`,
+      shouldFail: true,
+    },
+    {
+      name: 'Fixture L: Presentation -> Direct DB import (NEGATIVE)',
+      path: path.join(process.cwd(), 'src', 'modules', 'auth', 'presentation', 'bad_pres_db.ts'),
+      content: `import { db } from '../../../db';`,
+      shouldFail: true,
+    },
+    {
+      name: 'Fixture M: Infrastructure -> Direct DB import (POSITIVE)',
+      path: path.join(
+        process.cwd(),
+        'src',
+        'modules',
+        'auth',
+        'infrastructure',
+        'good_infra_db.ts'
+      ),
+      content: `import { db } from '../../../db';`,
+      shouldFail: false,
+    },
   ];
 
   let passedAllSelfTests = true;
@@ -359,7 +404,7 @@ function runSelfTest() {
   }
 
   console.log(
-    '✅ Architecture Gate Self-Test PASSED (All 9 AST negative/positive fixtures verified).'
+    '✅ Architecture Gate Self-Test PASSED (All 13 AST negative/positive fixtures verified).'
   );
   process.exit(0);
 }
