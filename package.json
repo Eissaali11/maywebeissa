@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:pglite": "vitest run src/tests/db-schema-foundation.test.ts",
     "test:postgres": "vitest run src/tests/db-real-postgres.test.ts",
+    "test:auth": "vitest run src/tests/auth-runtime.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:drift": "node scripts/db-drift-check.mjs",
