@@ -70,6 +70,18 @@ jobs:
           DB_NAME: portfolio_test_db
         run: npm run test:auth
 
+      - name: Admin Bootstrap Tests
+        env:
+          BETTER_AUTH_SECRET: 'ephemeral-ci-test-secret-at-least-32-chars-long-123456'
+          BETTER_AUTH_URL: 'http://localhost:3000'
+          DB_USER: postgres
+          DB_PASS: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: portfolio_test_db
+          ALLOW_DESTRUCTIVE_DB_TESTS: 'true'
+        run: npm run test:admin-bootstrap
+
       - name: Real PostgreSQL 16 Integration & Security Tests
         env:
           DB_USER: postgres
