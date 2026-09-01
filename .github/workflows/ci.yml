@@ -61,6 +61,7 @@ jobs:
 
       - name: Auth Runtime Tests
         env:
+          DATABASE_URL: 'postgres://postgres:postgrespassword@localhost:5432/portfolio_test_db'
           BETTER_AUTH_SECRET: 'ephemeral-ci-test-secret-at-least-32-chars-long-123456'
           BETTER_AUTH_URL: 'http://localhost:3000'
           DB_USER: postgres
@@ -72,6 +73,7 @@ jobs:
 
       - name: Admin Bootstrap Tests
         env:
+          DATABASE_URL: 'postgres://postgres:postgrespassword@localhost:5432/portfolio_test_db'
           BETTER_AUTH_SECRET: 'ephemeral-ci-test-secret-at-least-32-chars-long-123456'
           BETTER_AUTH_URL: 'http://localhost:3000'
           DB_USER: postgres

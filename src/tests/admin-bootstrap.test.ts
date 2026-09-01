@@ -1,11 +1,3 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { sql } from 'drizzle-orm';
-import { db } from '../db';
-import { user, session, account, verification } from '../db/schema';
-import { getAuth, resetAuthInstance, validateAdminSession } from '../modules/auth';
-import { bootstrapAdmin } from '../modules/auth/infrastructure/admin-bootstrap-composition';
-import { assertTestDatabaseSafety } from './utils/db-safety-guard';
-
 const TEST_SECRET = 'test-secret-at-least-32-characters-long-bootstrap-suite';
 const TEST_URL = 'http://localhost:3000';
 
@@ -14,7 +6,16 @@ const dbPass = process.env.DB_PASS || 'postgres';
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = process.env.DB_PORT || '5432';
 const dbName = process.env.DB_NAME || 'portfolio_test';
-const defaultDbUrl = `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`;
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`;
+
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { sql } from 'drizzle-orm';
+import { db } from '../db';
+import { user, session, account, verification } from '../db/schema';
+import { getAuth, resetAuthInstance, validateAdminSession } from '../modules/auth';
+import { bootstrapAdmin } from '../modules/auth/infrastructure/admin-bootstrap-composition';
+import { assertTestDatabaseSafety } from './utils/db-safety-guard';
 
 async function resetDbTables() {
   await db.execute(sql`ALTER TABLE audit_logs DISABLE TRIGGER ALL;`);
@@ -29,12 +30,11 @@ describe('ADMIN-BOOTSTRAP-001 — Single Admin Bootstrap & Real Credential/Sessi
   let sessionCookie = '';
 
   beforeAll(async () => {
-    process.env.DATABASE_URL = process.env.DATABASE_URL || defaultDbUrl;
     process.env.BETTER_AUTH_SECRET = TEST_SECRET;
     process.env.BETTER_AUTH_URL = TEST_URL;
     process.env.ALLOW_DESTRUCTIVE_DB_TESTS = 'true';
 
-    const connectedDbName = new URL(process.env.DATABASE_URL).pathname.replace('/', '');
+    const connectedDbName = new URL(process.env.DATABASE_URL!).pathname.replace('/', '');
 
     assertTestDatabaseSafety({
       currentDatabase: connectedDbName,
