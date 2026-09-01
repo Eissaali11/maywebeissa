@@ -11,6 +11,20 @@ jobs:
     name: Run Quality Gates
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: portfolio_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -18,11 +32,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Format Check
+        run: npm run format:check
 
       - name: Lint Verification
         run: npm run lint
@@ -30,8 +47,45 @@ jobs:
       - name: Typecheck Verification
         run: npm run typecheck
 
-      - name: Test Suite Verification
-        run: npm run test
+      - name: Architecture Boundary Verification
+        run: npm run architecture:check
+
+      - name: Architecture Boundary Self-Test
+        run: npm run architecture:self-test
+
+      - name: PGlite Isolated Tests
+        run: npm run test:pglite
+
+      - name: Safety Guard & Smoke Tests
+        run: npm run test -- src/tests/db-safety-guard.test.ts src/tests/smoke.test.ts
+
+      - name: Real PostgreSQL 16 Integration & Security Tests
+        env:
+          DB_USER: postgres
+          DB_PASS: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: portfolio_test_db
+          ALLOW_DESTRUCTIVE_DB_TESTS: 'true'
+        run: npm run test:postgres
+
+      - name: Schema Drift Verification
+        env:
+          DB_USER: postgres
+          DB_PASS: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: portfolio_test_db
+        run: npm run db:drift
+
+      - name: Migration History Consistency Check
+        env:
+          DB_USER: postgres
+          DB_PASS: postgrespassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: portfolio_test_db
+        run: npm run db:check
 
       - name: Production Build Verification
         run: npm run build
