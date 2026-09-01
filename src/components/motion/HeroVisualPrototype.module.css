@@ -1,0 +1,279 @@
+/* SCOPED DESIGN TOKENS FOR HERO VISUAL PROTOTYPE (DIRECTION A — ENGINEERED CINEMATIC) */
+.prototypeRoot {
+  /* Surface & Canvas Tokens */
+  --bg-canvas: #090a0f;
+  --bg-surface-base: #12141d;
+  --bg-surface-elevated: #1a1d28;
+  --bg-surface-overlay: rgba(18, 20, 29, 0.88);
+
+  /* Typography Tokens */
+  --text-primary: #f4f5f7;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #090a0f;
+
+  /* Accent Hierarchy (Cyan Dominant, Amber Selective) */
+  --accent-tech: #0ea5e9;
+  --accent-tech-glow: rgba(14, 165, 233, 0.14);
+  --accent-tech-border: rgba(14, 165, 233, 0.35);
+  --accent-ai: #f59e0b;
+  --accent-ai-glow: rgba(245, 158, 11, 0.14);
+  --accent-ai-border: rgba(245, 158, 11, 0.35);
+
+  /* Borders & Dividers */
+  --border-subtle: #1e293b;
+  --border-medium: #334155;
+  --border-focus: #0ea5e9;
+
+  /* Feedback Colors */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  position: relative;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Background Atmospheric Grid */
+.gridBackground {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  pointer-events: none;
+}
+
+/* Hybrid Engineered Display Container */
+.displayContainer {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  margin-inline: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-surface-base);
+  border: 1px solid var(--border-medium);
+  border-radius: 16px;
+  box-shadow:
+    0 0 50px -10px var(--accent-tech-glow),
+    0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition:
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+@media (max-width: 768px) {
+  .displayContainer {
+    aspect-ratio: 9 / 16;
+    max-width: 380px;
+    border-radius: 24px;
+  }
+}
+
+/* Engineered Display Header Bar */
+.displayHeader {
+  height: 38px;
+  padding-inline: 16px;
+  background: rgba(18, 20, 29, 0.95);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.windowControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.windowDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--border-medium);
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 8px;
+  padding-block: 2px;
+  border-radius: 9999px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid var(--accent-tech-border);
+  color: var(--accent-tech);
+}
+
+.statusIndicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-tech);
+  box-shadow: 0 0 8px var(--accent-tech);
+}
+
+/* Main Viewport Content Surface */
+.viewportSurface {
+  position: relative;
+  flex: 1;
+  background-color: var(--bg-canvas);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stage Overlay Layer */
+.stageLayer {
+  position: absolute;
+  inset: 0;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.4s ease-in-out,
+    transform 0.4s ease-in-out;
+  transform: translateY(12px);
+}
+
+.stageLayerActive {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Code Editor Surface Styling */
+.codeCard {
+  background: var(--bg-surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.codeLine {
+  display: flex;
+  gap: 16px;
+  line-height: 1.6;
+}
+
+.lineNumber {
+  color: var(--text-muted);
+  user-select: none;
+  width: 24px;
+  text-align: end;
+}
+
+/* Project Surface Cards */
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.projectCard {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.projectCard:hover {
+  border-color: var(--accent-tech-border);
+  transform: translateY(-2px);
+}
+
+/* AI Pipeline Nodes */
+.pipelineFlow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.pipelineNode {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  flex: 1;
+  min-width: 120px;
+}
+
+.pipelineNodeAi {
+  border-color: var(--accent-ai-border);
+  background: rgba(245, 158, 11, 0.05);
+  color: var(--accent-ai);
+}
+
+/* Stage Jump Control Bar (Prototype Only) */
+.stageControlBar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: rgba(18, 20, 29, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-medium);
+  border-radius: 9999px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.stageBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stageBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stageBtnActive {
+  color: var(--accent-tech);
+  background: rgba(14, 165, 233, 0.12);
+  border-color: var(--accent-tech-border);
+}
