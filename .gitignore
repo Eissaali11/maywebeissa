@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# source assets & temporary build/extraction files
+/assets/source/
+/.tmp/

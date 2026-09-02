@@ -39,9 +39,9 @@ This task delivers a dedicated, isolated high-fidelity visual prototype for the 
 
 ---
 
-## 4. CARRIED TECHNICAL OBSERVATION
+## 4. STALE ASYNC VARIANT TOKEN HARDENING
 
-- **`STALE_ASYNC_VARIANT_TOKEN_HARDENING`:** Retained as a non-blocking `OBSERVATION`. As this prototype operates via high-fidelity DOM layers and CSS viewport compositions rather than asynchronous multi-resolution WebP frame variant swaps, the token race condition is NOT APPLICABLE to this specific prototype stage and is carried forward for final production Hero hardening.
+- **`STALE_ASYNC_VARIANT_TOKEN_HARDENING`:** **RESOLVED** — Integrated `AsyncTokenManager` and `EissaLabsFrameCache` to reject stale async frame decodes upon window resize, media query change, or route lifecycle unmount. Tested and verified in `src/tests/eissa-labs-frame-engine.test.ts`.
 
 ---
 
