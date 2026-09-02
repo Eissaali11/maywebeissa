@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  assignBitmapId,
   AsyncTokenManager,
   DecodedFrame,
   drawCoverFrame,
@@ -12,6 +13,7 @@ import {
   lookupFrameIndexByProgress,
   ManifestFrameEntry,
   releaseDecodedFrame,
+  resetBitmapAccounting,
   validateManifest,
 } from '../../lib/motion/eissa-labs-frame-engine';
 import styles from './HeroVisualPrototype.module.css';
@@ -51,24 +53,26 @@ export function HeroVisualPrototype() {
   const cacheRef = useRef<EissaLabsFrameCache | null>(null);
   const currentFrameIndexRef = useRef<number>(0);
 
-  // Initialize frame cache with token manager (Bounded capacity = 20)
+  // Initialize frame cache with token manager (Bounded production capacity = 15)
   if (!cacheRef.current) {
     cacheRef.current = new EissaLabsFrameCache(tokenManagerRef.current, {
-      maxCacheSize: 20,
+      maxCacheSize: 15,
       forwardPreloadWindow: 8,
       backwardPreloadWindow: 4,
     });
   }
 
-  // Expose telemetry getter to window for development/testing
+  // Expose telemetry getter & reset functions to window for development/testing
   useEffect(() => {
     if (typeof window !== 'undefined' && cacheRef.current) {
       const win = window as unknown as {
         __FRAME_ENGINE_TELEMETRY__?: () => unknown;
         __FRAME_ENGINE_SET_MAX_CACHE__?: (cap: number) => void;
+        __FRAME_ENGINE_RESET_ACCOUNTING__?: () => void;
       };
       win.__FRAME_ENGINE_TELEMETRY__ = () => cacheRef.current?.getTelemetry();
       win.__FRAME_ENGINE_SET_MAX_CACHE__ = (cap: number) => cacheRef.current?.setMaxCacheSize(cap);
+      win.__FRAME_ENGINE_RESET_ACCOUNTING__ = () => resetBitmapAccounting();
     }
     return () => {
       if (typeof window !== 'undefined') {
@@ -76,12 +80,14 @@ export function HeroVisualPrototype() {
           .__FRAME_ENGINE_TELEMETRY__;
         delete (window as unknown as { __FRAME_ENGINE_SET_MAX_CACHE__?: unknown })
           .__FRAME_ENGINE_SET_MAX_CACHE__;
+        delete (window as unknown as { __FRAME_ENGINE_RESET_ACCOUNTING__?: unknown })
+          .__FRAME_ENGINE_RESET_ACCOUNTING__;
       }
     };
   }, []);
 
   /**
-   * Async Frame Loader with Stale Generation Token Hardening
+   * Async Frame Loader with Stale Generation Token Hardening & Bitmap ID Assignment
    */
   const loadFrame = async (
     entry: ManifestFrameEntry,
@@ -106,12 +112,15 @@ export function HeroVisualPrototype() {
           return null;
         }
 
-        return await createImageBitmap(blob);
+        const bitmap = await createImageBitmap(blob);
+        assignBitmapId(bitmap);
+        return bitmap;
       } else {
         return new Promise<DecodedFrame | null>((resolve) => {
           const img = new Image();
           img.onload = () => {
             if (tokenManagerRef.current.isValidToken(token)) {
+              assignBitmapId(img);
               resolve(img);
             } else {
               resolve(null);
@@ -141,7 +150,7 @@ export function HeroVisualPrototype() {
     // Trigger frame window preload & cache update
     cacheRef.current.updateWindow(index, manifestRef.current, loadFrame);
 
-    // Perform explicit cache lookup
+    // Perform explicit cache lookup (increments cacheHits or cacheMisses)
     const decodedFrame = cacheRef.current.getFrame(index);
     if (decodedFrame) {
       drawCoverFrame(ctx, decodedFrame, canvas.width, canvas.height);

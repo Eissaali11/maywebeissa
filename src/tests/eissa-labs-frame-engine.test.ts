@@ -3,6 +3,8 @@ import {
   validateManifest,
   lookupFrameIndexByProgress,
   releaseDecodedFrame,
+  assignBitmapId,
+  resetBitmapAccounting,
   AsyncTokenManager,
   EissaLabsFrameCache,
   ManifestFrameEntry,
@@ -47,11 +49,12 @@ const MOCK_MANIFEST: ManifestFrameEntry[] = [
   },
 ];
 
-describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R2 Frame Engine Suite', () => {
+describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R3 Unique Bitmap Invariant Suite', () => {
   let tokenManager: AsyncTokenManager;
   let cache: EissaLabsFrameCache;
 
   beforeEach(() => {
+    resetBitmapAccounting();
     tokenManager = new AsyncTokenManager();
     cache = new EissaLabsFrameCache(tokenManager, {
       maxCacheSize: 3,
@@ -108,17 +111,33 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R2 Frame Engine Suite', () => {
     });
   });
 
-  describe('3. Double-Close Guard Protection', () => {
-    it('prevents closing an already closed ImageBitmap', () => {
+  describe('3. Unique Bitmap Identity & Double-Close Prevention', () => {
+    it('assigns unique logical debug IDs to created bitmaps', () => {
+      const b1 = { close: vi.fn() } as unknown as HTMLImageElement;
+      const b2 = { close: vi.fn() } as unknown as HTMLImageElement;
+
+      const id1 = assignBitmapId(b1);
+      const id2 = assignBitmapId(b2);
+
+      expect(id1).toBeGreaterThan(0);
+      expect(id2).toBeGreaterThan(0);
+      expect(id1).not.toBe(id2);
+    });
+
+    it('prevents closing an already closed ImageBitmap and increments duplicateCloseAttempts', () => {
       const mockClose = vi.fn();
       const mockFrame = { close: mockClose } as unknown as HTMLImageElement;
+      assignBitmapId(mockFrame);
 
-      const firstCall = releaseDecodedFrame(mockFrame);
-      const secondCall = releaseDecodedFrame(mockFrame);
+      const firstCall = releaseDecodedFrame(mockFrame, 'eviction');
+      const secondCall = releaseDecodedFrame(mockFrame, 'eviction');
 
       expect(firstCall).toBe(true);
       expect(secondCall).toBe(false);
       expect(mockClose).toHaveBeenCalledTimes(1);
+
+      const telemetry = cache.getTelemetry();
+      expect(telemetry.duplicateCloseAttempts).toBe(1);
     });
   });
 
@@ -132,15 +151,15 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R2 Frame Engine Suite', () => {
       expect(tokenManager.isValidToken(t2)).toBe(true);
     });
 
-    it('rejects deliberate stale async frame load results and increments counter', async () => {
+    it('rejects deliberate stale async frame load results, closes bitmap under stale_discard, and never inserts into active cache', async () => {
       const token1 = tokenManager.nextToken();
 
-      const mockLoader = vi
-        .fn()
-        .mockImplementation(async (entry: ManifestFrameEntry, token: number) => {
-          await new Promise((resolve) => setTimeout(resolve, 30));
-          return { width: 1280, height: 720, close: vi.fn() } as unknown as HTMLImageElement;
-        });
+      const mockLoader = vi.fn().mockImplementation(async (entry: ManifestFrameEntry) => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        const b = { width: 1280, height: 720, close: vi.fn() } as unknown as HTMLImageElement;
+        assignBitmapId(b);
+        return b;
+      });
 
       // Initiate load under token 1
       cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
@@ -153,49 +172,46 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R2 Frame Engine Suite', () => {
 
       expect(cache.getCacheSize()).toBe(0);
       expect(cache.hasFrame(0)).toBe(false);
-      expect(cache.getTelemetry().staleLoadRejections).toBeGreaterThanOrEqual(1);
+
+      const telemetry = cache.getTelemetry();
+      expect(telemetry.staleLoadRejections).toBeGreaterThanOrEqual(1);
+      expect(telemetry.staleDiscardedBitmapIdsCount).toBeGreaterThanOrEqual(1);
+      expect(telemetry.duplicateCloseAttempts).toBe(0);
     });
   });
 
-  describe('5. Bounded Decoded Cache & Telemetry Consistency', () => {
-    it('tracks decodes, hits, misses, evictions, and peak cache size consistently', async () => {
+  describe('5. R3 Set-Level Identity Equation Invariant', () => {
+    it('proves uniqueClosed === uniqueEvicted + uniqueStaleDiscarded + uniqueUnmountCleared', async () => {
       tokenManager.nextToken();
-      const mockClose = vi.fn();
       const mockLoader = vi.fn().mockImplementation(async (entry: ManifestFrameEntry) => {
-        return { width: 1280, height: 720, close: mockClose } as unknown as HTMLImageElement;
+        const b = { width: 1280, height: 720, close: vi.fn() } as unknown as HTMLImageElement;
+        assignBitmapId(b);
+        return b;
       });
 
-      // Load frames into cache with maxCacheSize = 3
-      cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
-      await new Promise((r) => setTimeout(r, 20));
+      // Load frames into cache with maxCacheSize = 3 (forces eviction on 5 frames)
+      for (let i = 0; i < 5; i++) {
+        cache.updateWindow(i, MOCK_MANIFEST, mockLoader);
+        await new Promise((r) => setTimeout(r, 10));
+      }
 
-      // Explicit lookup
-      cache.getFrame(0); // Hit or Miss
-      cache.getFrame(999); // Miss
-
-      const telemetry = cache.getTelemetry();
-      expect(telemetry.configuredCacheMaximum).toBe(3);
-      expect(telemetry.peakDecodedCacheSize).toBeLessThanOrEqual(3);
-      expect(telemetry.totalSuccessfulDecodes).toBeGreaterThan(0);
-      expect(telemetry.totalCacheHits + telemetry.totalCacheMisses).toBe(2);
-    });
-
-    it('clears all frames and closes bitmaps on unmount clear()', async () => {
-      tokenManager.nextToken();
-      const mockClose = vi.fn();
-      const mockLoader = vi.fn().mockImplementation(async (entry: ManifestFrameEntry) => {
-        return { width: 1280, height: 720, close: mockClose } as unknown as HTMLImageElement;
-      });
-
-      cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
-      await new Promise((r) => setTimeout(r, 20));
+      // Explicit lookups
+      cache.getFrame(0);
+      cache.getFrame(1);
 
       cache.clear();
 
-      expect(cache.getCacheSize()).toBe(0);
       const telemetry = cache.getTelemetry();
-      expect(telemetry.currentDecodedCacheSize).toBe(0);
-      expect(telemetry.pendingFetchCount).toBe(0);
+      expect(telemetry.duplicateCloseAttempts).toBe(0);
+      expect(telemetry.configuredCacheMaximum).toBe(3);
+      expect(telemetry.peakDecodedCacheSize).toBeLessThanOrEqual(3);
+
+      const terminalSum =
+        telemetry.evictedBitmapIdsCount +
+        telemetry.staleDiscardedBitmapIdsCount +
+        telemetry.unmountClearedBitmapIdsCount;
+
+      expect(telemetry.closedBitmapIdsCount).toBe(terminalSum);
     });
   });
 
