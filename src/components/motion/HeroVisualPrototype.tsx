@@ -63,14 +63,19 @@ export function HeroVisualPrototype() {
   // Expose telemetry getter to window for development/testing
   useEffect(() => {
     if (typeof window !== 'undefined' && cacheRef.current) {
-      (
-        window as unknown as { __FRAME_ENGINE_TELEMETRY__?: () => unknown }
-      ).__FRAME_ENGINE_TELEMETRY__ = () => cacheRef.current?.getTelemetry();
+      const win = window as unknown as {
+        __FRAME_ENGINE_TELEMETRY__?: () => unknown;
+        __FRAME_ENGINE_SET_MAX_CACHE__?: (cap: number) => void;
+      };
+      win.__FRAME_ENGINE_TELEMETRY__ = () => cacheRef.current?.getTelemetry();
+      win.__FRAME_ENGINE_SET_MAX_CACHE__ = (cap: number) => cacheRef.current?.setMaxCacheSize(cap);
     }
     return () => {
       if (typeof window !== 'undefined') {
         delete (window as unknown as { __FRAME_ENGINE_TELEMETRY__?: unknown })
           .__FRAME_ENGINE_TELEMETRY__;
+        delete (window as unknown as { __FRAME_ENGINE_SET_MAX_CACHE__?: unknown })
+          .__FRAME_ENGINE_SET_MAX_CACHE__;
       }
     };
   }, []);
@@ -136,6 +141,7 @@ export function HeroVisualPrototype() {
     // Trigger frame window preload & cache update
     cacheRef.current.updateWindow(index, manifestRef.current, loadFrame);
 
+    // Perform explicit cache lookup
     const decodedFrame = cacheRef.current.getFrame(index);
     if (decodedFrame) {
       drawCoverFrame(ctx, decodedFrame, canvas.width, canvas.height);

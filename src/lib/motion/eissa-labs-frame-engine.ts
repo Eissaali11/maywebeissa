@@ -1,7 +1,7 @@
 /**
- * UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine
+ * UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R2 Frame Engine
  * Adaptive WebP Manifest Loader, Stale Async Generation Token Manager,
- * Bounded Decoded Frame Cache with Telemetry Instrumentation & Canvas 2D Cover Renderer.
+ * Bounded Decoded Frame Cache with Telemetry Instrumentation & Double-Close Guard.
  */
 
 export interface ManifestFrameEntry {
@@ -33,6 +33,8 @@ export interface FrameCacheTelemetry {
   pendingFetchCount: number;
 }
 
+// Development & Test Double-Close Protection Guard
+const closedBitmaps = new WeakSet<object>();
 let globalBitmapCloseCount = 0;
 
 /**
@@ -101,28 +103,37 @@ export function lookupFrameIndexByProgress(
 }
 
 /**
- * Closes and frees an ImageBitmap if supported.
+ * Closes and frees an ImageBitmap with Double-Close Protection.
+ * Returns true if an unclosed bitmap was successfully closed, false otherwise.
  */
-export function releaseDecodedFrame(frame: DecodedFrame): void {
+export function releaseDecodedFrame(frame: DecodedFrame): boolean {
+  if (!frame) return false;
+
+  if (typeof frame === 'object' && closedBitmaps.has(frame)) {
+    // Duplicate close attempt prevented!
+    return false;
+  }
+
   if (typeof ImageBitmap !== 'undefined' && frame instanceof ImageBitmap) {
     try {
+      closedBitmaps.add(frame);
       frame.close();
       globalBitmapCloseCount += 1;
+      return true;
     } catch {
-      // Ignore if already closed
+      return false;
     }
-  } else if (
-    frame &&
-    'close' in frame &&
-    typeof (frame as { close: () => void }).close === 'function'
-  ) {
+  } else if ('close' in frame && typeof (frame as { close: () => void }).close === 'function') {
     try {
+      closedBitmaps.add(frame as object);
       (frame as { close: () => void }).close();
       globalBitmapCloseCount += 1;
+      return true;
     } catch {
-      // Ignore
+      return false;
     }
   }
+  return false;
 }
 
 /**
@@ -170,10 +181,14 @@ export class EissaLabsFrameCache {
   constructor(tokenManager: AsyncTokenManager, config: Partial<FrameCacheConfig> = {}) {
     this.tokenManager = tokenManager;
     this.config = {
-      maxCacheSize: config.maxCacheSize ?? 25,
+      maxCacheSize: config.maxCacheSize ?? 20,
       forwardPreloadWindow: config.forwardPreloadWindow ?? 8,
       backwardPreloadWindow: config.backwardPreloadWindow ?? 4,
     };
+  }
+
+  public setMaxCacheSize(capacity: number): void {
+    this.config.maxCacheSize = capacity;
   }
 
   public getFrame(index: number): DecodedFrame | null {
@@ -212,9 +227,11 @@ export class EissaLabsFrameCache {
 
   public clear(): void {
     for (const frame of this.cache.values()) {
-      this.totalBitmapCloseCalls += 1;
+      const closed = releaseDecodedFrame(frame);
+      if (closed) {
+        this.totalBitmapCloseCalls += 1;
+      }
       this.totalEvictions += 1;
-      releaseDecodedFrame(frame);
     }
     this.cache.clear();
     this.pendingFetches.clear();
@@ -257,6 +274,7 @@ export class EissaLabsFrameCache {
         loadFrameFn(manifest[index], currentToken)
           .then((frame) => {
             this.pendingFetches.delete(index);
+
             if (this.tokenManager.isValidToken(currentToken)) {
               if (frame && index >= minKeep && index <= maxKeep) {
                 this.totalSuccessfulDecodes += 1;
@@ -267,13 +285,13 @@ export class EissaLabsFrameCache {
                 this.enforceMaxCapacity(targetIndex);
               } else if (frame) {
                 this.totalEvictions += 1;
-                this.totalBitmapCloseCalls += 1;
-                releaseDecodedFrame(frame);
+                const closed = releaseDecodedFrame(frame);
+                if (closed) this.totalBitmapCloseCalls += 1;
               }
             } else if (frame) {
               this.staleLoadRejections += 1;
-              this.totalBitmapCloseCalls += 1;
-              releaseDecodedFrame(frame);
+              const closed = releaseDecodedFrame(frame);
+              if (closed) this.totalBitmapCloseCalls += 1;
             }
           })
           .catch(() => {
@@ -287,8 +305,8 @@ export class EissaLabsFrameCache {
     for (const [index, frame] of this.cache.entries()) {
       if (index < minKeep || index > maxKeep) {
         this.totalEvictions += 1;
-        this.totalBitmapCloseCalls += 1;
-        releaseDecodedFrame(frame);
+        const closed = releaseDecodedFrame(frame);
+        if (closed) this.totalBitmapCloseCalls += 1;
         this.cache.delete(index);
       }
     }
@@ -311,8 +329,8 @@ export class EissaLabsFrameCache {
     const frame = this.cache.get(furthestIndex);
     if (frame) {
       this.totalEvictions += 1;
-      this.totalBitmapCloseCalls += 1;
-      releaseDecodedFrame(frame);
+      const closed = releaseDecodedFrame(frame);
+      if (closed) this.totalBitmapCloseCalls += 1;
       this.cache.delete(furthestIndex);
     }
   }

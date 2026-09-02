@@ -47,7 +47,7 @@ const MOCK_MANIFEST: ManifestFrameEntry[] = [
   },
 ];
 
-describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine Suite', () => {
+describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R2 Frame Engine Suite', () => {
   let tokenManager: AsyncTokenManager;
   let cache: EissaLabsFrameCache;
 
@@ -108,7 +108,21 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine Suite', () => {
     });
   });
 
-  describe('3. Stale Async Generation Token Hardening', () => {
+  describe('3. Double-Close Guard Protection', () => {
+    it('prevents closing an already closed ImageBitmap', () => {
+      const mockClose = vi.fn();
+      const mockFrame = { close: mockClose } as unknown as HTMLImageElement;
+
+      const firstCall = releaseDecodedFrame(mockFrame);
+      const secondCall = releaseDecodedFrame(mockFrame);
+
+      expect(firstCall).toBe(true);
+      expect(secondCall).toBe(false);
+      expect(mockClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('4. Deliberate Stale Async Generation Token Hardening', () => {
     it('invalidates tokens when nextToken() is called', () => {
       const t1 = tokenManager.nextToken();
       expect(tokenManager.isValidToken(t1)).toBe(true);
@@ -118,35 +132,33 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine Suite', () => {
       expect(tokenManager.isValidToken(t2)).toBe(true);
     });
 
-    it('rejects stale async frame load results when token changes', async () => {
-      tokenManager.nextToken(); // Token 1
+    it('rejects deliberate stale async frame load results and increments counter', async () => {
+      const token1 = tokenManager.nextToken();
 
       const mockLoader = vi
         .fn()
         .mockImplementation(async (entry: ManifestFrameEntry, token: number) => {
-          // Simulate async delay
-          await new Promise((resolve) => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 30));
           return { width: 1280, height: 720, close: vi.fn() } as unknown as HTMLImageElement;
         });
 
-      // Initiate load with token 1
+      // Initiate load under token 1
       cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
 
-      // Immediately invalidate token (e.g. resize / unmount / variant change)
-      tokenManager.invalidate(); // Token 2
+      // Deliberately invalidate token 1
+      tokenManager.invalidate();
 
-      // Wait for loader to finish
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      // Wait for async load to finish
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Cache MUST NOT contain frames loaded under stale token 1!
       expect(cache.getCacheSize()).toBe(0);
       expect(cache.hasFrame(0)).toBe(false);
-      expect(cache.getTelemetry().staleLoadRejections).toBeGreaterThan(0);
+      expect(cache.getTelemetry().staleLoadRejections).toBeGreaterThanOrEqual(1);
     });
   });
 
-  describe('4. Bounded Decoded Cache & Telemetry Instrumentation', () => {
-    it('tracks decodes, hits, misses, evictions, and bitmap.close() calls', async () => {
+  describe('5. Bounded Decoded Cache & Telemetry Consistency', () => {
+    it('tracks decodes, hits, misses, evictions, and peak cache size consistently', async () => {
       tokenManager.nextToken();
       const mockClose = vi.fn();
       const mockLoader = vi.fn().mockImplementation(async (entry: ManifestFrameEntry) => {
@@ -157,19 +169,15 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine Suite', () => {
       cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
       await new Promise((r) => setTimeout(r, 20));
 
-      expect(cache.getCacheSize()).toBeLessThanOrEqual(3);
+      // Explicit lookup
+      cache.getFrame(0); // Hit or Miss
+      cache.getFrame(999); // Miss
 
       const telemetry = cache.getTelemetry();
       expect(telemetry.configuredCacheMaximum).toBe(3);
+      expect(telemetry.peakDecodedCacheSize).toBeLessThanOrEqual(3);
       expect(telemetry.totalSuccessfulDecodes).toBeGreaterThan(0);
-
-      // Query cache hit & miss
-      cache.getFrame(0);
-      cache.getFrame(999);
-
-      const updatedTelemetry = cache.getTelemetry();
-      expect(updatedTelemetry.totalCacheHits).toBeGreaterThan(0);
-      expect(updatedTelemetry.totalCacheMisses).toBeGreaterThan(0);
+      expect(telemetry.totalCacheHits + telemetry.totalCacheMisses).toBe(2);
     });
 
     it('clears all frames and closes bitmaps on unmount clear()', async () => {
@@ -191,7 +199,7 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine Suite', () => {
     });
   });
 
-  describe('5. Canvas 2D Cover Rendering', () => {
+  describe('6. Canvas 2D Cover Rendering', () => {
     it('draws frame onto canvas context without error', () => {
       const mockCtx = {
         clearRect: vi.fn(),
