@@ -51,14 +51,29 @@ export function HeroVisualPrototype() {
   const cacheRef = useRef<EissaLabsFrameCache | null>(null);
   const currentFrameIndexRef = useRef<number>(0);
 
-  // Initialize frame cache with token manager
+  // Initialize frame cache with token manager (Bounded capacity = 20)
   if (!cacheRef.current) {
     cacheRef.current = new EissaLabsFrameCache(tokenManagerRef.current, {
-      maxCacheSize: 35,
-      forwardPreloadWindow: 10,
-      backwardPreloadWindow: 5,
+      maxCacheSize: 20,
+      forwardPreloadWindow: 8,
+      backwardPreloadWindow: 4,
     });
   }
+
+  // Expose telemetry getter to window for development/testing
+  useEffect(() => {
+    if (typeof window !== 'undefined' && cacheRef.current) {
+      (
+        window as unknown as { __FRAME_ENGINE_TELEMETRY__?: () => unknown }
+      ).__FRAME_ENGINE_TELEMETRY__ = () => cacheRef.current?.getTelemetry();
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as unknown as { __FRAME_ENGINE_TELEMETRY__?: unknown })
+          .__FRAME_ENGINE_TELEMETRY__;
+      }
+    };
+  }, []);
 
   /**
    * Async Frame Loader with Stale Generation Token Hardening
@@ -309,7 +324,7 @@ export function HeroVisualPrototype() {
             <div className="flex items-center gap-3">
               <span className="hidden sm:inline text-slate-400">
                 FRAME: {String(currentFrameIndexRef.current + 1).padStart(4, '0')} /{' '}
-                {manifestRef.current.length || 96}
+                {manifestRef.current.length || 52}
               </span>
               <div className={styles.statusBadge}>
                 <span className={styles.statusIndicator} />

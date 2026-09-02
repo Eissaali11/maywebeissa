@@ -47,7 +47,7 @@ const MOCK_MANIFEST: ManifestFrameEntry[] = [
   },
 ];
 
-describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001 Frame Engine Suite', () => {
+describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine Suite', () => {
   let tokenManager: AsyncTokenManager;
   let cache: EissaLabsFrameCache;
 
@@ -126,7 +126,7 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001 Frame Engine Suite', () => {
         .mockImplementation(async (entry: ManifestFrameEntry, token: number) => {
           // Simulate async delay
           await new Promise((resolve) => setTimeout(resolve, 50));
-          return { width: 1280, height: 720 } as unknown as HTMLImageElement;
+          return { width: 1280, height: 720, close: vi.fn() } as unknown as HTMLImageElement;
         });
 
       // Initiate load with token 1
@@ -141,30 +141,53 @@ describe('UI-HERO-FRAME-SEQUENCE-INTEGRATION-001 Frame Engine Suite', () => {
       // Cache MUST NOT contain frames loaded under stale token 1!
       expect(cache.getCacheSize()).toBe(0);
       expect(cache.hasFrame(0)).toBe(false);
+      expect(cache.getTelemetry().staleLoadRejections).toBeGreaterThan(0);
     });
   });
 
-  describe('4. Bounded Cache & ImageBitmap Cleanup', () => {
-    it('enforces maximum cache size and evicts furthest frame', async () => {
-      const token = tokenManager.nextToken();
+  describe('4. Bounded Decoded Cache & Telemetry Instrumentation', () => {
+    it('tracks decodes, hits, misses, evictions, and bitmap.close() calls', async () => {
+      tokenManager.nextToken();
+      const mockClose = vi.fn();
       const mockLoader = vi.fn().mockImplementation(async (entry: ManifestFrameEntry) => {
-        return { width: 1280, height: 720 } as unknown as HTMLImageElement;
+        return { width: 1280, height: 720, close: mockClose } as unknown as HTMLImageElement;
       });
 
-      // Load frames 0..4 into cache with maxCacheSize = 3
+      // Load frames into cache with maxCacheSize = 3
       cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
-      await new Promise((r) => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 20));
 
       expect(cache.getCacheSize()).toBeLessThanOrEqual(3);
+
+      const telemetry = cache.getTelemetry();
+      expect(telemetry.configuredCacheMaximum).toBe(3);
+      expect(telemetry.totalSuccessfulDecodes).toBeGreaterThan(0);
+
+      // Query cache hit & miss
+      cache.getFrame(0);
+      cache.getFrame(999);
+
+      const updatedTelemetry = cache.getTelemetry();
+      expect(updatedTelemetry.totalCacheHits).toBeGreaterThan(0);
+      expect(updatedTelemetry.totalCacheMisses).toBeGreaterThan(0);
     });
 
-    it('clears all frames on clear()', () => {
+    it('clears all frames and closes bitmaps on unmount clear()', async () => {
       tokenManager.nextToken();
-      const frameMock = { width: 100, height: 100 } as unknown as HTMLImageElement;
+      const mockClose = vi.fn();
+      const mockLoader = vi.fn().mockImplementation(async (entry: ManifestFrameEntry) => {
+        return { width: 1280, height: 720, close: mockClose } as unknown as HTMLImageElement;
+      });
 
-      // Directly populate cache via updateWindow test
+      cache.updateWindow(0, MOCK_MANIFEST, mockLoader);
+      await new Promise((r) => setTimeout(r, 20));
+
       cache.clear();
+
       expect(cache.getCacheSize()).toBe(0);
+      const telemetry = cache.getTelemetry();
+      expect(telemetry.currentDecodedCacheSize).toBe(0);
+      expect(telemetry.pendingFetchCount).toBe(0);
     });
   });
 

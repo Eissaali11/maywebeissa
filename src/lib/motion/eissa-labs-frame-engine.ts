@@ -1,7 +1,7 @@
 /**
- * UI-HERO-FRAME-SEQUENCE-INTEGRATION-001 Frame Engine
+ * UI-HERO-FRAME-SEQUENCE-INTEGRATION-001-R1 Frame Engine
  * Adaptive WebP Manifest Loader, Stale Async Generation Token Manager,
- * Bounded Decoded Frame Cache, and Canvas 2D Cover Renderer for Eissa Labs Hero.
+ * Bounded Decoded Frame Cache with Telemetry Instrumentation & Canvas 2D Cover Renderer.
  */
 
 export interface ManifestFrameEntry {
@@ -19,6 +19,21 @@ export interface FrameCacheConfig {
   forwardPreloadWindow: number;
   backwardPreloadWindow: number;
 }
+
+export interface FrameCacheTelemetry {
+  currentDecodedCacheSize: number;
+  configuredCacheMaximum: number;
+  peakDecodedCacheSize: number;
+  totalSuccessfulDecodes: number;
+  totalCacheHits: number;
+  totalCacheMisses: number;
+  totalEvictions: number;
+  totalBitmapCloseCalls: number;
+  staleLoadRejections: number;
+  pendingFetchCount: number;
+}
+
+let globalBitmapCloseCount = 0;
 
 /**
  * Validates sequence manifest integrity.
@@ -41,14 +56,12 @@ export function validateManifest(manifest: unknown): manifest is ManifestFrameEn
     }
   }
 
-  // Ensure sorted normalizedProgress
   for (let i = 1; i < manifest.length; i++) {
     if (manifest[i].normalizedProgress < manifest[i - 1].normalizedProgress) {
       return false;
     }
   }
 
-  // Ensure boundaries 0 and 1
   if (manifest[0].normalizedProgress !== 0) return false;
   if (manifest[manifest.length - 1].normalizedProgress !== 1) return false;
 
@@ -94,15 +107,26 @@ export function releaseDecodedFrame(frame: DecodedFrame): void {
   if (typeof ImageBitmap !== 'undefined' && frame instanceof ImageBitmap) {
     try {
       frame.close();
+      globalBitmapCloseCount += 1;
     } catch {
       // Ignore if already closed
+    }
+  } else if (
+    frame &&
+    'close' in frame &&
+    typeof (frame as { close: () => void }).close === 'function'
+  ) {
+    try {
+      (frame as { close: () => void }).close();
+      globalBitmapCloseCount += 1;
+    } catch {
+      // Ignore
     }
   }
 }
 
 /**
  * Generation/Variant Token Manager for Stale Async Hardening.
- * Guarantees stale async loads from previous tokens are rejected cleanly.
  */
 export class AsyncTokenManager {
   private activeToken = 0;
@@ -126,25 +150,41 @@ export class AsyncTokenManager {
 }
 
 /**
- * Bounded Frame Cache with explicit ImageBitmap eviction & Stale Async Hardening.
+ * Bounded Frame Cache with explicit ImageBitmap eviction, Stale Async Hardening & Telemetry.
  */
 export class EissaLabsFrameCache {
   private cache = new Map<number, DecodedFrame>();
-  private pendingFetches = new Map<number, number>(); // index -> token
+  private pendingFetches = new Map<number, number>();
   private tokenManager: AsyncTokenManager;
   private config: FrameCacheConfig;
+
+  // Telemetry counters
+  private peakDecodedCacheSize = 0;
+  private totalSuccessfulDecodes = 0;
+  private totalCacheHits = 0;
+  private totalCacheMisses = 0;
+  private totalEvictions = 0;
+  private totalBitmapCloseCalls = 0;
+  private staleLoadRejections = 0;
 
   constructor(tokenManager: AsyncTokenManager, config: Partial<FrameCacheConfig> = {}) {
     this.tokenManager = tokenManager;
     this.config = {
-      maxCacheSize: config.maxCacheSize ?? 30,
+      maxCacheSize: config.maxCacheSize ?? 25,
       forwardPreloadWindow: config.forwardPreloadWindow ?? 8,
       backwardPreloadWindow: config.backwardPreloadWindow ?? 4,
     };
   }
 
   public getFrame(index: number): DecodedFrame | null {
-    return this.cache.get(index) || null;
+    const frame = this.cache.get(index);
+    if (frame) {
+      this.totalCacheHits += 1;
+      return frame;
+    } else {
+      this.totalCacheMisses += 1;
+      return null;
+    }
   }
 
   public hasFrame(index: number): boolean {
@@ -155,8 +195,25 @@ export class EissaLabsFrameCache {
     return this.cache.size;
   }
 
+  public getTelemetry(): FrameCacheTelemetry {
+    return {
+      currentDecodedCacheSize: this.cache.size,
+      configuredCacheMaximum: this.config.maxCacheSize,
+      peakDecodedCacheSize: this.peakDecodedCacheSize,
+      totalSuccessfulDecodes: this.totalSuccessfulDecodes,
+      totalCacheHits: this.totalCacheHits,
+      totalCacheMisses: this.totalCacheMisses,
+      totalEvictions: this.totalEvictions,
+      totalBitmapCloseCalls: this.totalBitmapCloseCalls + globalBitmapCloseCount,
+      staleLoadRejections: this.staleLoadRejections,
+      pendingFetchCount: this.pendingFetches.size,
+    };
+  }
+
   public clear(): void {
     for (const frame of this.cache.values()) {
+      this.totalBitmapCloseCalls += 1;
+      this.totalEvictions += 1;
       releaseDecodedFrame(frame);
     }
     this.cache.clear();
@@ -175,10 +232,8 @@ export class EissaLabsFrameCache {
     const minKeep = Math.max(0, targetIndex - this.config.backwardPreloadWindow);
     const maxKeep = Math.min(totalFrames - 1, targetIndex + this.config.forwardPreloadWindow);
 
-    // Evict frames outside current window or when cache limit exceeded
     this.evictOutsideWindow(minKeep, maxKeep);
 
-    // Build priority load order
     const loadOrder: number[] = [targetIndex];
 
     for (let offset = 1; offset <= this.config.forwardPreloadWindow; offset++) {
@@ -202,16 +257,22 @@ export class EissaLabsFrameCache {
         loadFrameFn(manifest[index], currentToken)
           .then((frame) => {
             this.pendingFetches.delete(index);
-            // STALE ASYNC HARDENING: Verify token & active window before caching
             if (this.tokenManager.isValidToken(currentToken)) {
               if (frame && index >= minKeep && index <= maxKeep) {
+                this.totalSuccessfulDecodes += 1;
                 this.cache.set(index, frame);
+                if (this.cache.size > this.peakDecodedCacheSize) {
+                  this.peakDecodedCacheSize = this.cache.size;
+                }
                 this.enforceMaxCapacity(targetIndex);
               } else if (frame) {
+                this.totalEvictions += 1;
+                this.totalBitmapCloseCalls += 1;
                 releaseDecodedFrame(frame);
               }
             } else if (frame) {
-              // Reject stale async load!
+              this.staleLoadRejections += 1;
+              this.totalBitmapCloseCalls += 1;
               releaseDecodedFrame(frame);
             }
           })
@@ -225,6 +286,8 @@ export class EissaLabsFrameCache {
   private evictOutsideWindow(minKeep: number, maxKeep: number): void {
     for (const [index, frame] of this.cache.entries()) {
       if (index < minKeep || index > maxKeep) {
+        this.totalEvictions += 1;
+        this.totalBitmapCloseCalls += 1;
         releaseDecodedFrame(frame);
         this.cache.delete(index);
       }
@@ -234,7 +297,6 @@ export class EissaLabsFrameCache {
   private enforceMaxCapacity(targetIndex: number): void {
     if (this.cache.size <= this.config.maxCacheSize) return;
 
-    // Find furthest frame from targetIndex and evict it
     let furthestIndex = targetIndex;
     let maxDistance = -1;
 
@@ -248,6 +310,8 @@ export class EissaLabsFrameCache {
 
     const frame = this.cache.get(furthestIndex);
     if (frame) {
+      this.totalEvictions += 1;
+      this.totalBitmapCloseCalls += 1;
       releaseDecodedFrame(frame);
       this.cache.delete(furthestIndex);
     }
